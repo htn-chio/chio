@@ -78,12 +78,14 @@ function checkFacebookMessages() {
     }
 
     function mapBusinessInfo(business) {
-        var newString = business.name + ' - ' + business.rating + ' stars';
-        var shortUrl = Bitly.shortenLink(business.url, function(err, result) {
-            console.log(result);
-            console.log(_.get(result, "data"));
-        });
-        newString += ' ' + shortUrl;
+        var newString = business.name;
+        newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
+        newString += ' - ' + business.rating + ' stars ';
+        newString += business.address || '';
+        if (business.phone) {
+            newString += 'TEL: ' + business.phone + ' ';
+        }
+        newString += business.url || '';
         return newString;
     }
 }
