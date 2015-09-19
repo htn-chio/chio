@@ -1,6 +1,7 @@
 var config = require('config');
 var _ = require('lodash');
 var FB = require('fb');
+var wit = require('./wit');
 
 var ACCESS_TOKEN = config.fb.access_token;
 var CHIO_BOT_ID = config.fb.chio_bot_id;
@@ -29,6 +30,8 @@ function checkFacebookMessages() {
                 var lastSenderId = _.get(lastMessage, 'from.id');
 
                 if (lastSenderId !== CHIO_BOT_ID) {
+                    var parsedMessage = wit.parseText(lastMessage.message);
+                    console.log(parsedMessage);
                     sendUserAMessage(conversation.id, 'Hi Im Chio Bot!', _.get(lastMessage, 'from.name'));
                 }
             });

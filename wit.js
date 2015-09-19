@@ -31,7 +31,6 @@ function parseText(text, callback) {
         var outcome = _.max(res.outcomes, 'confidence');
         next(null, FUNC_BY_INTENT[outcome.intent](outcome));
     }
-
 }
 
 function parseReminderResponse(res){
@@ -74,4 +73,3 @@ function getIntentFromOutcome(outcome){
 function getValueFromEntity(entity){
     return entity.value
 }
-
