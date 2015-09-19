@@ -1,9 +1,11 @@
+var async = require('async');
 var config = require('config');
 var _ = require('lodash');
 var FB = require('fb');
 var wit = require('./wit');
 var eventbrite = require('./eventbrite');
 var Reminder = require('./models/reminder.model.js');
+var request = require('request');
 var yelp = require('yelp').createClient({
     consumer_key: "XZYHgCOEsUws1-HGNAKG6w",
     consumer_secret: "OorilNhUdoeScwdbgj0xsPF4XgQ",
@@ -85,10 +87,22 @@ function checkFacebookMessages() {
                     sendUserAMessage(conversationId, 'Reminder saved!', username);
                 }
             })
+        } else if (result.api === 'Uber') {
+            async.waterfall([
+                findUber,
+                requestUber,
+                acceptUber
+            ], finalCallback)
+            // find Uber
+            // Make request
+
+            // Change status to accepted
+
+            // Send message back to User with Uber information
         } else if (result.api === 'Greeting') {
-            sendUserAMessage(conversationId, 'Hello, '+ username + '!', username);
+            sendUserAMessage(conversationId, 'Hello, ' + username + '!', username);
         } else if (result.api === 'Event') {
-            eventbrite.search(result.data, function(err, data){
+            eventbrite.search(result.data, function (err, data) {
                 if (err) console.error(err);
                 var eventStrings = _.map(data.events.slice(0, 3), mapEventData);
                 var messageToSend = eventStrings.join('\n\n');
@@ -97,13 +111,94 @@ function checkFacebookMessages() {
         } else if (result.api === 'Insult') {
             sendUserAMessage(conversationId, '#Rude', username);
         } else {
-            sendUserAMessage(conversationId, 'Sorry, I don\'t understand what you said.',  username);
+            sendUserAMessage(conversationId, 'Sorry, I don\'t understand what you said.', username);
+        }
+
+        function findUber(waterfallNext) {
+            var url = 'https://sandbox-api.uber.com/v1/products';
+            var params = {
+                "server_token": "AhNNYnBNwt_BDiHL0hPNGUuEHXpHpO21gvNNVlJL",
+                "longitude": -80.5400,
+                "latitude": 43.4689
+            };
+            var options = {
+                url: url,
+                qs: params
+            };
+            request.get(options, function (error, response) {
+                var uber = JSON.parse(response.body).products[0];
+                var uberDetails = {};
+                if (uber) {
+                    uberDetails = {
+                        productId: uber.product_id,
+                        type: uber.display_name
+                    };
+                }
+                sendUserAMessage(conversationId, 'Uber found!', _.get(lastMessageG, 'from.name'));
+                return waterfallNext(null, uberDetails);
+            });
+        }
+
+        function requestUber(uberDetails, waterfallNext) {
+            var url = 'https://sandbox-api.uber.com/v1/requests';
+            var headers = {
+                "Authorization": "Bearer sKvt3zQt7dYXLfqCPQXxoOEf03DR3t",
+                "Content-Type": "application/json"
+            };
+            var body = {
+                "product_id": uberDetails.productId,
+                "start_longitude": "-80.5400",
+                "start_latitude": "43.4689",
+                "end_longitude": "-79.4000",
+                "end_latitude": "43.7000"
+            };
+
+            var options = {
+                url: url,
+                headers: headers,
+                json: body
+            };
+
+            request.post(options, function (error, response) {
+                sendUserAMessage(conversationId, 'Uber requested. Waiting for driver to accept...', _.get(lastMessageG, 'from.name'));
+                var requestDetails = {
+                    requestId: response.body.request_id,
+                    eta: response.body.eta
+                };
+                return waterfallNext(null, requestDetails);
+            })
+        }
+
+        function acceptUber(requestDetails, waterfallNext) {
+            var url = 'https://sandbox-api.uber.com/v1/sandbox/request/' + requestDetails.requestId;
+            var headers = {
+                "Authorization": "Bearer sKvt3zQt7dYXLfqCPQXxoOEf03DR3t",
+                "Content-Type": "application/json"
+            };
+            var body = {
+                "status": "accepted"
+            };
+            var options = {
+                url: url,
+                headers: headers,
+                json: body
+            };
+
+            request.put(options, function (error, response) {
+                var message = 'Uber accepted! ' + 'Your Uber is arriving in approximately, ' + requestDetails.eta + ' minutes.';
+                sendUserAMessage(conversationId, message, _.get(lastMessageG, 'from.name'));
+                return waterfallNext(null);
+            })
+        }
+
+        function finalCallback(error) {
+            console.log('done')
         }
 
         function mapEventData(event) {
             var ret = event.name.text + '\n';
-            ret += 'Start: '+ event.start.local + '\n';
-            ret += 'End: '+ event.end.local + '\n';
+            ret += 'Start: ' + event.start.local + '\n';
+            ret += 'End: ' + event.end.local + '\n';
             if (!!event.vanity_url)
                 ret += event.vanity_url;
             else
@@ -112,12 +207,14 @@ function checkFacebookMessages() {
         }
 
         function mapBusinessInfo(business) {
-            var newString = business.name + '\n';
-            newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ' + '\n';
-            newString += ' - ' + business.rating + ' stars ' + '\n';
-            newString += business.address + '\n' || '' ;
+            var newString = business.name;
+            if (business.hasOwnProperty('is_closed')) {
+                newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
+            }
+            newString += '- ' + business.rating + '/5.0 ';
+            newString += business.address || '';
             if (business.phone) {
-                newString += 'TEL: ' + business.phone + '\n';
+                newString += '\r\nTEL: ' + business.phone + ' ';
             }
             newString += business.url || '';
             return newString;

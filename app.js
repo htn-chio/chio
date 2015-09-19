@@ -55,28 +55,32 @@ app.get('/redirect', function(req, res) {
         client_id: clientID,
         client_secret: clientSecret,
         code: req.query.code,
-        redirect_uri: 'http%3A%2F%2Flocalhost%3A3000%2Fsuccess',
+        redirect_uri: 'http://localhost:3000/redirect',
         grant_type: 'authorization_code'
     };
     console.log(option);
     if(req.query.code) {
         oauth2.getOAuthAccessToken(req.query.code, option, function (err, access_token, refresh_token) {
+          console.log('access ' + access_token);
+          console.log('ref ' + refresh_token);
             if (err) {
                 console.log(err);
             }
-            console.log(access_token);
         })
     }
 });
 
 app.get('/authUber', function(req, res) {
   console.log(oauth2.getAuthorizeUrl({
-    'response_type': 'code'
+    'response_type': 'code',
+    'redirect_uri': 'http://localhost:3000/redirect',
+    'scope': 'request'
   }));
 });
 
 app.get('/success', function(req, res) {
-  console.log('success!');
+  console.log(req.query);
+  console.log('access code: ' + req.query.code);
 })
 
 /*
