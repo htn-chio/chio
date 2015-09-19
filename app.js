@@ -53,8 +53,9 @@ app.get('/redirect', function(req, res) {
     var option = {
         client_id: clientID,
         client_secret: clientSecret,
-        authorization_code: req.query.code,
-        redirect_uri: 'localhost:3000/success'
+        code: req.query.code,
+        redirect_uri: 'http%3A%2F%2Flocalhost%3A3000%2Fsuccess',
+        grant_type: 'authorization_code'
     };
     console.log(option);
     if(req.query.code) {
@@ -72,6 +73,10 @@ app.get('/authUber', function(req, res) {
     'response_type': 'code'
   }));
 });
+
+app.get('/success', function(req, res) {
+  console.log('success!');
+})
 
 /*
  * Start it up
