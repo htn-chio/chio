@@ -1,41 +1,63 @@
 'use strict';
-
 /*
  * Express Dependencies
  */
 var express = require('express');
+var _ = require('lodash');
+var config = require('config');
+
 var app = express();
 var port = 3000;
 
 // For gzip compression
 app.use(express.compress());
 
-/*
- * Config for Production and Development
- */
-if (process.env.NODE_ENV === 'production') {
-    // Locate the views
-    app.set('views', __dirname + '/dist/views');
+var ACCESS_TOKEN = config.fb.access_token;
+var CHIO_BOT_ID = config.fb.chio_bot_id;
 
-    // Locate the assets
-    app.use(express.static(__dirname + '/dist/assets'));
+var FB = require('fb');
+FB.setAccessToken(ACCESS_TOKEN);
 
-} else {
-    // Locate the views
-    app.set('views', __dirname + '/views');
+setInterval(function () {
+    checkFacebookMessages();
+}, 1000);
 
-    // Locate the assets
-    app.use(express.static(__dirname + '/assets'));
+function checkFacebookMessages() {
+    var chioBotConversationURL = '/952568054788707/conversations';
+
+    FB.api(chioBotConversationURL, parseConversations);
+
+    function parseConversations(response) {
+        if (response && !response.error) {
+            var conversations = response.data;
+
+            _.forEach(conversations, function(conversation) {
+                var lastMessage = _.first(_.get(conversation, 'messages.data'));
+
+                var lastSenderId = _.get(lastMessage, 'from.id');
+
+                if (lastSenderId !== CHIO_BOT_ID) {
+                    sendUserAMessage(conversation.id, 'Hi Im Chio Bot!', _.get(lastMessage, 'from.name'));
+                }
+            });
+        }
+    }
 }
 
-// Set Handlebars
-app.set('view engine', 'handlebars');
+function sendUserAMessage(conversationId, message, userName) {
+    var conversationURL = '/' +  conversationId + '/messages';
+    FB.api(conversationURL, 'POST', { 'message': message }, callback);
+
+    function callback() {
+        console.log('message sent to ' + userName);
+    }
+}
 
 /*
  * Routes
  */
 // Index Page
-app.get('/', function(request, response) {
+app.get('/', function (request, response) {
     response.render('index');
 });
 
