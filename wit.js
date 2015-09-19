@@ -53,6 +53,7 @@ function parseYelpResponse(outcome){
         data: {
             locations: _.map(outcome.entities.location, getValueFromEntity),
             search_queries: _.map(outcome.entities.search_query, getValueFromEntity),
+            user_locations: _.map(outcome.entities.user_location, getValueFromEntity)
         }
     }
 }
