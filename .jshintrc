@@ -8,7 +8,7 @@
     "eqnull": true,
     "immed": true,
     "indent": 4,
-    "latedef": true,
+    "latedef": false,
     "maxlen": 180,
     "maxstatements": 20,
     "newcap": true,
