@@ -5,6 +5,8 @@ var wit = require('node-wit');
 
 var ACCESS_TOKEN = '73NJLBMT4DZ6E7Q4OEGALQASWS7V2Y7C'
 var FUNC_BY_INTENT = {
+    eventSearch: parseEventResponse,
+    greeting: parseGreetingResponse,
     Reminder: parseReminderResponse,
     restaurantSearch: parseYelpResponse,
     ride: parseUberResponse
@@ -35,6 +37,28 @@ function parseText(text, callback) {
         return waterfallNext(FUNC_BY_INTENT[outcome.intent](outcome));
     }
 }
+
+function parseGreetingResponse(outcome){
+    return {
+        api: 'Greeting',
+        data: {
+            contacts: _.map(outcome.entities.contact, getValueFromEntity),
+        }
+    }
+}
+
+
+function parseEventResponse(outcome){
+    return {
+        api: 'Event',
+        data: {
+            locations: _.map(outcome.entities.location, getValueFromEntity),
+            search_queries: _.map(outcome.entities.search_query, getValueFromEntity),
+            datetimes: _.map(outcome.entities.datetime, getValueFromEntity)
+        }
+    }
+}
+
 
 function parseReminderResponse(outcome){
     return {

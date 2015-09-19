@@ -37,6 +37,7 @@ module.exports = fbController;
 function checkFacebookMessages() {
     var conversationId;
     var lastMessageG;
+    var username;
     var chioBotConversationURL = '/952568054788707/conversations';
 
     FB.api(chioBotConversationURL, parseConversations);
@@ -54,6 +55,7 @@ function checkFacebookMessages() {
                     wit.parseText(lastMessage.message, processResult);
                     conversationId = conversation.id;
                     lastMessageG = lastMessage;
+                    username = _.get(lastMessageG, 'from.name');
                 }
             });
         }
@@ -85,10 +87,16 @@ function checkFacebookMessages() {
             });
             reminderDocument.save(function (err) {
 
-                sendUserAMessage(conversationId, 'Reminder saved!', _.get(lastMessageG, 'from.name'));
+                sendUserAMessage(conversationId, 'Reminder saved!', username);
                 if (err) handleError(err);
                 // saved!
             })
+        } else if (result.api === 'Greeting') {
+            sendUserAMessage(conversationId, 'Hello, '+ username + '!', username);
+        } else if (result.api === 'Event') {
+            sendUserAMessage(conversationId, 'Event detected!', username);
+        } else {
+            sendUserAMessage(conversationId, 'Sorry, I don\'t understand what you said.',  username);
         }
 
         function mapBusinessInfo(business) {
