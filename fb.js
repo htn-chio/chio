@@ -2,6 +2,12 @@ var config = require('config');
 var _ = require('lodash');
 var FB = require('fb');
 var wit = require('./wit');
+var yelp = require('yelp').createClient({
+    consumer_key: "XZYHgCOEsUws1-HGNAKG6w",
+    consumer_secret: "OorilNhUdoeScwdbgj0xsPF4XgQ",
+    token: "4v5gD9lBIHIzYRbt7i8rj5I2CE-bB-uE",
+    token_secret: "k44cj6mfS_3VChUm_GUMfbghtK0"
+});
 
 var ACCESS_TOKEN = config.fb.access_token;
 var CHIO_BOT_ID = config.fb.chio_bot_id;
@@ -16,6 +22,8 @@ var fbController = {
 module.exports = fbController;
 
 function checkFacebookMessages() {
+  var conversationId;
+  var lastMessageG;
     var chioBotConversationURL = '/952568054788707/conversations';
 
     FB.api(chioBotConversationURL, parseConversations);
@@ -30,11 +38,22 @@ function checkFacebookMessages() {
                 var lastSenderId = _.get(lastMessage, 'from.id');
 
                 if (lastSenderId !== CHIO_BOT_ID) {
-                    var parsedMessage = wit.parseText(lastMessage.message);
-                    console.log(parsedMessage);
-                    sendUserAMessage(conversation.id, 'Hi Im Chio Bot!', _.get(lastMessage, 'from.name'));
+                    wit.parseText(lastMessage.message, processResult);
+                    conversationId = conversation.id;
+                    lastMessageG = lastMessage;
                 }
             });
+        }
+    }
+
+    function processResult(result) {
+        if (result.api === 'Yelp') {
+            yelp.search({term: 'food', location: 'University of Waterloo'}, function(error, data){
+              var businesses = data.businesses;
+              var names = _.pluck(businesses, 'name');
+              var firstThreeNames = _.take(names, 3).join();
+              sendUserAMessage(conversationId, firstThreeNames, _.get(lastMessageG, 'from.name'));
+            })
         }
     }
 }

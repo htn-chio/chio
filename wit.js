@@ -31,7 +31,7 @@ function parseText(text, callback) {
         var outcome = _.max(res.outcomes, 'confidence');
         if(!FUNC_BY_INTENT.hasOwnProperty(outcome.intent))
             waterfallNext('Intent does not exist: ' + outcome.intent)
-        waterfallNext(null, FUNC_BY_INTENT[outcome.intent](outcome));
+        waterfallNext(FUNC_BY_INTENT[outcome.intent](outcome));
     }
 }
 

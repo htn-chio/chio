@@ -7,10 +7,10 @@
     "config": "^1.16.0",
     "express": "~3.4.0",
     "express3-handlebars": "0.4.x",
-    "node-wit": "2.0.0",
-    "express3-handlebars": "0.4.x",
     "fb": "^0.7.3",
-    "lodash": "^3.10.1"
+    "lodash": "^3.10.1",
+    "node-wit": "2.0.0",
+    "yelp": "^0.2.0"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
