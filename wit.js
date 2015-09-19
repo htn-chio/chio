@@ -3,18 +3,18 @@ var async = require('async');
 var wit = require('node-wit');
 
 
-var ACCESS_TOKEN = '73NJLBMT4DZ6E7Q4OEGALQASWS7V2Y7C'
+var ACCESS_TOKEN = '73NJLBMT4DZ6E7Q4OEGALQASWS7V2Y7C';
 var FUNC_BY_INTENT = {
     eventSearch: parseEventResponse,
     greeting: parseGreetingResponse,
     Reminder: parseReminderResponse,
     restaurantSearch: parseYelpResponse,
     ride: parseUberResponse
-}
+};
 
 module.exports = {
     parseText: parseText
-}
+};
 
 function parseText(text, callback) {
     async.waterfall([

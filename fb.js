@@ -114,7 +114,12 @@ function checkFacebookMessages() {
 }
 
 function sendUserAMessage(conversationId, message, userName) {
+    if (!message) {
+        return;
+    }
+
     var conversationURL = '/' + conversationId + '/messages';
+    message += '\n\n from ' + config.user.name + '\'s server.';
     FB.api(conversationURL, 'POST', {'message': message}, callback);
 
     function callback() {
