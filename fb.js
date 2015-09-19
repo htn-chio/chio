@@ -67,18 +67,23 @@ function checkFacebookMessages() {
                 sendUserAMessage(conversationId, messageToSend, username);
             })
         } else if (result.api === 'Reminder') {
+            var task = _.first(result.data.reminders);
+
+            if (!task) {
+                return sendUserAMessage(conversationId, 'I don\'t know what to remind you.', username);
+            }
+
             var reminderDocument = new Reminder({
                 conversation_id: conversationId,
                 status: 'scheduled',
                 reminder_date: _.first(result.data.datetimes),
                 location: _.first(result.data.locations),
-                task: _.first(result.data.reminders)
+                task: task
             });
             reminderDocument.save(function (err) {
-
-                sendUserAMessage(conversationId, 'Reminder saved!', username);
-                if (err) handleError(err);
-                // saved!
+                if (!err) {
+                    sendUserAMessage(conversationId, 'Reminder saved!', username);
+                }
             })
         } else if (result.api === 'Greeting') {
             sendUserAMessage(conversationId, 'Hello, '+ username + '!', username);

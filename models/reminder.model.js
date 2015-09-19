@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 
 var reminderSchema = {
-    user_id: {
+    conversation_id: {
         type: String,
         required: true
     },

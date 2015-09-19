@@ -5,9 +5,10 @@
 var request = require('request');
 var express = require('express');
 var mongoose = require('mongoose');
+var config = require('config');
 
 // Connect to database
-mongoose.connect('54.69.56.146', 'mine-prod');
+mongoose.connect(config.mongo.config);
 mongoose.connection.on('error', function(err) {
 	console.error('MongoDB connection error: ' + err);
 	process.exit(-1);
