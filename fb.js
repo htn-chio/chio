@@ -2,6 +2,7 @@ var config = require('config');
 var _ = require('lodash');
 var FB = require('fb');
 var wit = require('./wit');
+var eventbrite = require('./eventbrite');
 var Reminder = require('./models/reminder.model.js');
 var yelp = require('yelp').createClient({
     consumer_key: "XZYHgCOEsUws1-HGNAKG6w",
@@ -9,23 +10,11 @@ var yelp = require('yelp').createClient({
     token: "4v5gD9lBIHIzYRbt7i8rj5I2CE-bB-uE",
     token_secret: "k44cj6mfS_3VChUm_GUMfbghtK0"
 });
-var BitlyAPI = require("node-bitlyapi");
-var Bitly = new BitlyAPI({
-    client_id: "732827186896c0fa364ae60ac0bfad0bafcda25f",
-    client_secret: "f91e1cef3dfb292cb46b9bb81f6cb81266c8bb6f"
-});
-Bitly.authenticate(config.bitly.username, config.bitly.password, function (err, access_token) {
-    if (err) {
-        console.log(err);
-    } else {
-        Bitly.setAccessToken(access_token);
-    }
-});
 
-var ACCESS_TOKEN = config.fb.access_token;
+var access_token = config.fb.access_token;
 var CHIO_BOT_ID = config.fb.chio_bot_id;
 
-FB.setAccessToken(ACCESS_TOKEN);
+FB.setAccessToken(access_token);
 
 var fbController = {
     checkFacebookMessages: checkFacebookMessages,
@@ -75,7 +64,7 @@ function checkFacebookMessages() {
                 var businesses = data.businesses;
                 var businessStrings = _.map(businesses, mapBusinessInfo);
                 var messageToSend = businessStrings.join('\n\n');
-                sendUserAMessage(conversationId, messageToSend, _.get(lastMessageG, 'from.name'));
+                sendUserAMessage(conversationId, messageToSend, username);
             })
         } else if (result.api === 'Reminder') {
             var reminderDocument = new Reminder({
@@ -94,18 +83,36 @@ function checkFacebookMessages() {
         } else if (result.api === 'Greeting') {
             sendUserAMessage(conversationId, 'Hello, '+ username + '!', username);
         } else if (result.api === 'Event') {
-            sendUserAMessage(conversationId, 'Event detected!', username);
+            eventbrite.search(result.data, function(err, data){
+                if (err) console.error(err);
+                var eventStrings = _.map(data.events.slice(0, 3), mapEventData);
+                var messageToSend = eventStrings.join('\n\n');
+                sendUserAMessage(conversationId, messageToSend, username);
+            });
+        } else if (result.api === 'Insult') {
+            sendUserAMessage(conversationId, '#Rude', username);
         } else {
             sendUserAMessage(conversationId, 'Sorry, I don\'t understand what you said.',  username);
         }
 
+        function mapEventData(event) {
+            var ret = event.name.text + '\n';
+            ret += 'Start: '+ event.start.local + '\n';
+            ret += 'End: '+ event.end.local + '\n';
+            if (!!event.vanity_url)
+                ret += event.vanity_url;
+            else
+                ret += event.url;
+            return ret;
+        }
+
         function mapBusinessInfo(business) {
-            var newString = business.name;
-            newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
-            newString += ' - ' + business.rating + ' stars ';
-            newString += business.address || '';
+            var newString = business.name + '\n';
+            newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ' + '\n';
+            newString += ' - ' + business.rating + ' stars ' + '\n';
+            newString += business.address + '\n' || '' ;
             if (business.phone) {
-                newString += 'TEL: ' + business.phone + ' ';
+                newString += 'TEL: ' + business.phone + '\n';
             }
             newString += business.url || '';
             return newString;

@@ -7,6 +7,7 @@ var ACCESS_TOKEN = '73NJLBMT4DZ6E7Q4OEGALQASWS7V2Y7C';
 var FUNC_BY_INTENT = {
     eventSearch: parseEventResponse,
     greeting: parseGreetingResponse,
+    insult: parseInsultResponse,
     Reminder: parseReminderResponse,
     restaurantSearch: parseYelpResponse,
     ride: parseUberResponse
@@ -31,6 +32,9 @@ function parseText(text, callback) {
 
     function parseWitResponse(res, waterfallNext) {
         var outcome = _.max(res.outcomes, 'confidence');
+        if (outcome.confidence < 0.7){
+            return waterfallNext('Not enough confidence');
+        }
         if(!FUNC_BY_INTENT.hasOwnProperty(outcome.intent)){
             return waterfallNext('Intent does not exist: ' + outcome.intent);
         }
@@ -55,6 +59,16 @@ function parseEventResponse(outcome){
             locations: _.map(outcome.entities.location, getValueFromEntity),
             search_queries: _.map(outcome.entities.search_query, getValueFromEntity),
             datetimes: _.map(outcome.entities.datetime, getValueFromEntity)
+        }
+    }
+}
+
+
+function parseInsultResponse(outcome){
+    return {
+        api: 'Insult',
+        data: {
+            contacts: _.map(outcome.entities.contact, getValueFromEntity),
         }
     }
 }
