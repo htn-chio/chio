@@ -14,11 +14,11 @@ var Bitly = new BitlyAPI({
     client_id: "732827186896c0fa364ae60ac0bfad0bafcda25f",
     client_secret: "f91e1cef3dfb292cb46b9bb81f6cb81266c8bb6f"
 });
-Bitly.authenticate(config.bitly.username, config.bitly.password, function(err, access_token) {
+Bitly.authenticate(config.bitly.username, config.bitly.password, function (err, access_token) {
     if (err) {
-      console.log(err);
+        console.log(err);
     } else {
-      Bitly.setAccessToken(access_token);
+        Bitly.setAccessToken(access_token);
     }
 });
 
@@ -35,8 +35,8 @@ var fbController = {
 module.exports = fbController;
 
 function checkFacebookMessages() {
-  var conversationId;
-  var lastMessageG;
+    var conversationId;
+    var lastMessageG;
     var chioBotConversationURL = '/952568054788707/conversations';
 
     FB.api(chioBotConversationURL, parseConversations);
@@ -45,7 +45,7 @@ function checkFacebookMessages() {
         if (response && !response.error) {
             var conversations = response.data;
 
-            _.forEach(conversations, function(conversation) {
+            _.forEach(conversations, function (conversation) {
                 var lastMessage = _.first(_.get(conversation, 'messages.data'));
 
                 var lastSenderId = _.get(lastMessage, 'from.id');
@@ -61,22 +61,28 @@ function checkFacebookMessages() {
 
     function processResult(result) {
         if (result.api === 'Yelp') {
-          var searchTerm = _.first(result.data.search_queries) || 'food';
-          var location = _.first(result.data.locations) || '200 University Ave. W, Waterloo, ON';
-          var options = {
-            term: searchTerm,
-            location: location,
-            limit: 3,
-            sort: 1 // 0 for best matched, 1 for distance, 2 for best rated
-          };
-            yelp.search(options, function(error, data){
-              var businesses = data.businesses;
-              var businessStrings = _.map(businesses, mapBusinessInfo);
-              var messageToSend = businessStrings.join('\n\n');
-              sendUserAMessage(conversationId, messageToSend, _.get(lastMessageG, 'from.name'));
+            var searchTerm = _.first(result.data.search_queries) || 'food';
+            var location = _.first(result.data.locations) || '200 University Ave. W, Waterloo, ON';
+            var options = {
+                term: searchTerm,
+                location: location,
+                limit: 3,
+                sort: 1 // 0 for best matched, 1 for distance, 2 for best rated
+            };
+            yelp.search(options, function (error, data) {
+                var businesses = data.businesses;
+                var businessStrings = _.map(businesses, mapBusinessInfo);
+                var messageToSend = businessStrings.join('\n\n');
+                sendUserAMessage(conversationId, messageToSend, _.get(lastMessageG, 'from.name'));
             })
         } else if (result.api === 'Reminder') {
-            var reminderDocument = new Reminder({ conversation_id: conversationId, status: 'scheduled', reminder_date: _.first(result.data.datetimes), location: _.first(result.data.locations), task: _.first(result.data.reminders) });
+            var reminderDocument = new Reminder({
+                conversation_id: conversationId,
+                status: 'scheduled',
+                reminder_date: _.first(result.data.datetimes),
+                location: _.first(result.data.locations),
+                task: _.first(result.data.reminders)
+            });
             reminderDocument.save(function (err) {
 
                 sendUserAMessage(conversationId, 'Reminder saved!', _.get(lastMessageG, 'from.name'));
@@ -85,22 +91,23 @@ function checkFacebookMessages() {
             })
         }
 
-    function mapBusinessInfo(business) {
-        var newString = business.name;
-        newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
-        newString += ' - ' + business.rating + ' stars ';
-        newString += business.address || '';
-        if (business.phone) {
-            newString += 'TEL: ' + business.phone + ' ';
+        function mapBusinessInfo(business) {
+            var newString = business.name;
+            newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
+            newString += ' - ' + business.rating + ' stars ';
+            newString += business.address || '';
+            if (business.phone) {
+                newString += 'TEL: ' + business.phone + ' ';
+            }
+            newString += business.url || '';
+            return newString;
         }
-        newString += business.url || '';
-        return newString;
     }
 }
 
 function sendUserAMessage(conversationId, message, userName) {
-    var conversationURL = '/' +  conversationId + '/messages';
-    FB.api(conversationURL, 'POST', { 'message': message }, callback);
+    var conversationURL = '/' + conversationId + '/messages';
+    FB.api(conversationURL, 'POST', {'message': message}, callback);
 
     function callback() {
         console.log('message sent to ' + userName);
