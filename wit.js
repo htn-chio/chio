@@ -20,48 +20,49 @@ function parseText(text, callback) {
         parseWitResponse
     ], callback);
 
-    function getWitResponse(next) {
+    function getWitResponse(waterfallNext) {
         wit.captureTextIntent(ACCESS_TOKEN, text, function (err, res) {
-            if (err) next(err);
-            next(null, res);
+            if (err) waterfallNext(err);
+            waterfallNext(null, res);
         });
     }
 
-    function parseWitResponse(res, next) {
+    function parseWitResponse(res, waterfallNext) {
         var outcome = _.max(res.outcomes, 'confidence');
-        next(null, FUNC_BY_INTENT[outcome.intent](outcome));
+        if(!FUNC_BY_INTENT.hasOwnProperty(outcome.intent))
+            waterfallNext('Intent does not exist: ' + outcome.intent)
+        waterfallNext(null, FUNC_BY_INTENT[outcome.intent](outcome));
     }
 }
 
-function parseReminderResponse(res){
+function parseReminderResponse(outcome){
     return {
         api: 'Reminder',
         data: {
-            locations: _.map(res.entities.location, getValueFromEntity),
-            reminders: _.map(res.entities.reminder, getValueFromEntity),
-            datetimes: _.map(res.entities.datetime, getValueFromEntity),
+            locations: _.map(outcome.entities.location, getValueFromEntity),
+            reminders: _.map(outcome.entities.reminder, getValueFromEntity),
+            datetimes: _.map(outcome.entities.datetime, getValueFromEntity),
         }
     }
 }
 
 
-function parseYelpResponse(res){
+function parseYelpResponse(outcome){
     return {
         api: 'Yelp',
         data: {
-            locations: _.map(res.entities.location, getValueFromEntity),
-            search_queries: _.map(res.entities.search_query, getValueFromEntity),
+            locations: _.map(outcome.entities.location, getValueFromEntity),
+            search_queries: _.map(outcome.entities.search_query, getValueFromEntity),
         }
     }
 }
 
-function parseUberResponse(res){
+function parseUberResponse(outcome){
     return {
         api: 'Uber',
         data: {
-            start_location: _.map(res.entities.start, getValueFromEntity),
-            end_location: _.map(res.entities.end, getValueFromEntity),
-            
+            start_location: _.map(outcome.entities.start, getValueFromEntity),
+            end_location: _.map(outcome.entities.end, getValueFromEntity),
         }
     }
 }
