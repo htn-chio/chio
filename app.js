@@ -53,8 +53,8 @@ app.get('/redirect', function(req, res) {
     var option = {
         client_id: clientID,
         client_secret: clientSecret,
-        redirect_uri: 'localhost:3000/success',
-        grant_type: 'authorization_code'
+        authorization_code: req.query.code,
+        redirect_uri: 'localhost:3000/success'
     };
     console.log(option);
     if(req.query.code) {

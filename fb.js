@@ -8,6 +8,18 @@ var yelp = require('yelp').createClient({
     token: "4v5gD9lBIHIzYRbt7i8rj5I2CE-bB-uE",
     token_secret: "k44cj6mfS_3VChUm_GUMfbghtK0"
 });
+var BitlyAPI = require("node-bitlyapi");
+var Bitly = new BitlyAPI({
+    client_id: "732827186896c0fa364ae60ac0bfad0bafcda25f",
+    client_secret: "f91e1cef3dfb292cb46b9bb81f6cb81266c8bb6f"
+});
+Bitly.authenticate(config.bitly.username, config.bitly.password, function(err, access_token) {
+    if (err) {
+      console.log(err);
+    } else {
+      Bitly.setAccessToken(access_token);
+    }
+});
 
 var ACCESS_TOKEN = config.fb.access_token;
 var CHIO_BOT_ID = config.fb.chio_bot_id;
@@ -48,13 +60,31 @@ function checkFacebookMessages() {
 
     function processResult(result) {
         if (result.api === 'Yelp') {
-            yelp.search({term: 'food', location: 'University of Waterloo'}, function(error, data){
+          var searchTerm = _.first(result.data.search_queries) || 'food';
+          var location = _.first(result.data.locations) || '200 University Ave. W, Waterloo, ON';
+          var options = {
+            term: searchTerm,
+            location: location,
+            limit: 3,
+            sort: 1 // 0 for best matched, 1 for distance, 2 for best rated
+          };
+            yelp.search(options, function(error, data){
               var businesses = data.businesses;
-              var names = _.pluck(businesses, 'name');
-              var firstThreeNames = _.take(names, 3).join();
-              sendUserAMessage(conversationId, firstThreeNames, _.get(lastMessageG, 'from.name'));
+              var businessStrings = _.map(businesses, mapBusinessInfo);
+              var messageToSend = businessStrings.join('\n\n');
+              sendUserAMessage(conversationId, messageToSend, _.get(lastMessageG, 'from.name'));
             })
         }
+    }
+
+    function mapBusinessInfo(business) {
+        var newString = business.name + ' - ' + business.rating + ' stars';
+        var shortUrl = Bitly.shortenLink(business.url, function(err, result) {
+            console.log(result);
+            console.log(_.get(result, "data"));
+        });
+        newString += ' ' + shortUrl;
+        return newString;
     }
 }
 

@@ -9,13 +9,14 @@
     "express3-handlebars": "0.4.x",
     "fb": "^0.7.3",
     "lodash": "^3.10.1",
+    "node-bitlyapi": "^0.4.0",
     "mongoose": "^4.1.7",
     "node-schedule": "^0.2.9",
     "node-wit": "2.0.0",
-    "yelp": "^0.2.0",
     "oauth": "^0.9.13",
     "parse": "^1.6.3",
-    "request": "^2.62.0"
+    "request": "^2.62.0",
+    "yelp": "^0.2.0"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
