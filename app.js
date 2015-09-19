@@ -4,6 +4,19 @@
  */
 var request = require('request');
 var express = require('express');
+var mongoose = require('mongoose');
+
+// Connect to database
+mongoose.connect('54.69.56.146', 'mine-prod');
+mongoose.connection.on('error', function(err) {
+	console.error('MongoDB connection error: ' + err);
+	process.exit(-1);
+	}
+);
+mongoose.connection.once('open', function(callback) {
+	console.log('yaaaay, connected');
+});
+
 
 var app = express();
 var port = 3000;
