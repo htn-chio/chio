@@ -20,8 +20,7 @@
   },
   "scripts": {
     "start": "node ${SCRIPT:-app.js}",
-    "monitor": "nodemon ${SCRIPT:-app.js}",
-    "deploy": "gcloud preview app deploy app.yaml"
+    "monitor": "nodemon ${SCRIPT:-app.js}"
   },
   "devDependencies": {},
   "engines": {
