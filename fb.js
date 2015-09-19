@@ -2,6 +2,7 @@ var config = require('config');
 var _ = require('lodash');
 var FB = require('fb');
 var wit = require('./wit');
+var Reminder = require('./models/reminder.model.js');
 var yelp = require('yelp').createClient({
     consumer_key: "XZYHgCOEsUws1-HGNAKG6w",
     consumer_secret: "OorilNhUdoeScwdbgj0xsPF4XgQ",
@@ -54,8 +55,19 @@ function checkFacebookMessages() {
               var firstThreeNames = _.take(names, 3).join();
               sendUserAMessage(conversationId, firstThreeNames, _.get(lastMessageG, 'from.name'));
             })
+        } else if (result.api === 'Reminder') {
+            var reminderDocument = new Reminder({ conversation_id: conversationId, status: 'scheduled', reminder_date: _.first(result.data.datetimes), location: _.first(result.data.locations), task: _.first(result.data.reminders) });
+            reminderDocument.save(function (err) {
+
+                sendUserAMessage(conversationId, 'Reminder saved!', _.get(lastMessageG, 'from.name'));
+                if (err) handleError(err);
+                // saved!
+            })
         }
+
     }
+
+    
 }
 
 function sendUserAMessage(conversationId, message, userName) {
