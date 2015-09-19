@@ -9,6 +9,7 @@
     "express3-handlebars": "0.4.x",
     "fb": "^0.7.3",
     "lodash": "^3.10.1",
+    "node-schedule": "^0.2.9",
     "node-wit": "2.0.0",
     "yelp": "^0.2.0"
   },
