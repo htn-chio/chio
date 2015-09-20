@@ -61,8 +61,8 @@ function checkFacebookMessages() {
             "Greeting": processGreeting,
             "Event": processEventSearch,
             "Insult": processInsult,
-			"Search": searchGoogle
-        }
+            "Search": searchGoogle
+        };
 
         if (FUNCTIONS_BY_INTENT[result.api]) {
             return FUNCTIONS_BY_INTENT[result.api]();
@@ -116,110 +116,110 @@ function checkFacebookMessages() {
         }
 
         function processUber() {
-          async.waterfall([
-              findUber,
-              requestUber,
-              acceptUber
-          ], finalCallback);
+            async.waterfall([
+                findUber,
+                requestUber,
+                acceptUber
+            ], finalCallback);
 
-          function findUber(waterfallNext) {
-              var url = 'https://sandbox-api.uber.com/v1/products';
-              var params = {
-                  "server_token": "AhNNYnBNwt_BDiHL0hPNGUuEHXpHpO21gvNNVlJL",
-                  "longitude": -80.5400,
-                  "latitude": 43.4689
-              };
-              var options = {
-                  url: url,
-                  qs: params
-              };
-              request.get(options, function (error, response) {
-                  var uber = JSON.parse(response.body).products[0];
-                  var uberDetails = {};
-                  if (uber) {
-                      uberDetails = {
-                          productId: uber.product_id,
-                          type: uber.display_name
-                      };
-                  }
-                  var messageObject = {
-                      message: 'Uber found!',
-                      shareable_attachment: 953066084738904
-                  };
+            function findUber(waterfallNext) {
+                var url = 'https://sandbox-api.uber.com/v1/products';
+                var params = {
+                    "server_token": "AhNNYnBNwt_BDiHL0hPNGUuEHXpHpO21gvNNVlJL",
+                    "longitude": -80.5400,
+                    "latitude": 43.4689
+                };
+                var options = {
+                    url: url,
+                    qs: params
+                };
+                request.get(options, function (error, response) {
+                    var uber = JSON.parse(response.body).products[0];
+                    var uberDetails = {};
+                    if (uber) {
+                        uberDetails = {
+                            productId: uber.product_id,
+                            type: uber.display_name
+                        };
+                    }
+                    var messageObject = {
+                        message: 'Uber found!',
+                        shareable_attachment: 953066084738904
+                    };
 
-                  sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
-                  return waterfallNext(null, uberDetails);
-              });
-          }
+                    sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
+                    return waterfallNext(null, uberDetails);
+                });
+            }
 
-          function requestUber(uberDetails, waterfallNext) {
-              var url = 'https://sandbox-api.uber.com/v1/requests';
-              var headers = {
-                  "Authorization": "Bearer sKvt3zQt7dYXLfqCPQXxoOEf03DR3t",
-                  "Content-Type": "application/json"
-              };
-              var body = {
-                  "product_id": uberDetails.productId,
-                  "start_longitude": "-80.5400",
-                  "start_latitude": "43.4689",
-                  "end_longitude": "-79.4000",
-                  "end_latitude": "43.7000"
-              };
+            function requestUber(uberDetails, waterfallNext) {
+                var url = 'https://sandbox-api.uber.com/v1/requests';
+                var headers = {
+                    "Authorization": "Bearer sKvt3zQt7dYXLfqCPQXxoOEf03DR3t",
+                    "Content-Type": "application/json"
+                };
+                var body = {
+                    "product_id": uberDetails.productId,
+                    "start_longitude": "-80.5400",
+                    "start_latitude": "43.4689",
+                    "end_longitude": "-79.4000",
+                    "end_latitude": "43.7000"
+                };
 
-              var options = {
-                  url: url,
-                  headers: headers,
-                  json: body
-              };
-              var messageObject = {
-                  message: 'Uber requested. Waiting for driver to accept...',
-                  shareable_attachment: 953066084738904
-              };
+                var options = {
+                    url: url,
+                    headers: headers,
+                    json: body
+                };
+                var messageObject = {
+                    message: 'Uber requested. Waiting for driver to accept...',
+                    shareable_attachment: 953066084738904
+                };
 
-              request.post(options, function (error, response) {
-                  sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
-                  var requestDetails = {
-                      requestId: response.body.request_id,
-                      eta: response.body.eta
-                  };
-                  return waterfallNext(null, requestDetails);
-              })
-          }
+                request.post(options, function (error, response) {
+                    sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
+                    var requestDetails = {
+                        requestId: response.body.request_id,
+                        eta: response.body.eta
+                    };
+                    return waterfallNext(null, requestDetails);
+                })
+            }
 
-          function acceptUber(requestDetails, waterfallNext) {
-              var url = 'https://sandbox-api.uber.com/v1/sandbox/request/' + requestDetails.requestId;
-              var headers = {
-                  "Authorization": "Bearer sKvt3zQt7dYXLfqCPQXxoOEf03DR3t",
-                  "Content-Type": "application/json"
-              };
-              var body = {
-                  "status": "accepted"
-              };
-              var options = {
-                  url: url,
-                  headers: headers,
-                  json: body
-              };
+            function acceptUber(requestDetails, waterfallNext) {
+                var url = 'https://sandbox-api.uber.com/v1/sandbox/request/' + requestDetails.requestId;
+                var headers = {
+                    "Authorization": "Bearer sKvt3zQt7dYXLfqCPQXxoOEf03DR3t",
+                    "Content-Type": "application/json"
+                };
+                var body = {
+                    "status": "accepted"
+                };
+                var options = {
+                    url: url,
+                    headers: headers,
+                    json: body
+                };
 
-              request.put(options, function (error, response) {
-                  var message = 'Uber accepted! ' + 'Your Uber is arriving in approximately, ' +
-                      requestDetails.eta + ' minutes.';
-                  var messageObject = {
-                      message: message,
-                      shareable_attachment: 953066084738904
-                  };
-                  sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
-                  return waterfallNext(null);
-              })
-          }
+                request.put(options, function (error, response) {
+                    var message = 'Uber accepted! ' + 'Your Uber is arriving in approximately, ' +
+                        requestDetails.eta + ' minutes.';
+                    var messageObject = {
+                        message: message,
+                        shareable_attachment: 953066084738904
+                    };
+                    sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
+                    return waterfallNext(null);
+                })
+            }
 
-          function finalCallback(error) {
-              console.log('done');
-          }
+            function finalCallback(error) {
+                console.log('done');
+            }
         }
 
         function processGreeting() {
-            sendUserAMessage(conversationId, { message: 'Hello, ' + username  + '!'}, username);
+            sendUserAMessage(conversationId, {message: 'Hello, ' + username + '!'}, username);
         }
 
         function processEventSearch() {
@@ -232,9 +232,10 @@ function checkFacebookMessages() {
         }
 
         function processInsult() {
-            sendUserAMessage(conversationId, { message: '#Rude' }, username);
+            sendUserAMessage(conversationId, {message: '#Rude'}, username);
+        }
 
-        function searchGoogle(username) {
+        function searchGoogle() {
             var url = 'https://ajax.googleapis.com/ajax/services/search/web?v=1.0';
             var params = {
                 "q": "kittens"
@@ -248,42 +249,12 @@ function checkFacebookMessages() {
                 var resultsToSend = _.map(results, function (result) {
                     return result.title.replace(/<\/?[^>]+(>|$)/g, "") + " " + result.visibleUrl + '\n\n';
                 });
-                sendUserAMessage(conversationId, { message: resultsToSend.join('') }, username);
-            });
-        }
-
-        function findUber(waterfallNext) {
-            var url = 'https://sandbox-api.uber.com/v1/products';
-            var params = {
-                "server_token": "AhNNYnBNwt_BDiHL0hPNGUuEHXpHpO21gvNNVlJL",
-                "longitude": -80.5400,
-                "latitude": 43.4689
-            };
-            var options = {
-                url: url,
-                qs: params
-            };
-            request.get(options, function (error, response) {
-                var uber = JSON.parse(response.body).products[0];
-                var uberDetails = {};
-                if (uber) {
-                    uberDetails = {
-                        productId: uber.product_id,
-                        type: uber.display_name
-                    };
-                }
-                var messageObject = {
-                    message: 'Uber found!',
-                    shareable_attachment: 953066084738904
-                };
-
-                sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
-                return waterfallNext(null, uberDetails);
+                sendUserAMessage(conversationId, {message: resultsToSend.join('')}, username);
             });
         }
 
         function processBadInput() {
-            sendUserAMessage(conversationId, { message: 'Sorry, I don\'t understand what you said.' }, username);
+            sendUserAMessage(conversationId, {message: 'Sorry, I don\'t understand what you said.'}, username);
         }
 
         function mapEventData(event) {

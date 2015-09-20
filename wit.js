@@ -11,7 +11,8 @@ var FUNC_BY_INTENT = {
     Reminder: parseReminderResponse,
     restaurantSearch: parseYelpResponse,
     ride: parseUberResponse,
-    viewMore: parseViewMoreResponse
+    viewMore: parseViewMoreResponse,
+    search: parseSearchResponse
 };
 
 module.exports = {
