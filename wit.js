@@ -9,6 +9,7 @@ var FUNC_BY_INTENT = {
     eventSearch: parseEventResponse,
     greeting: parseGreetingResponse,
     insult: parseInsultResponse,
+    location: parseLocationResponse,
     Reminder: parseReminderResponse,
     restaurantSearch: parseYelpResponse,
     ride: parseUberResponse,
@@ -84,6 +85,15 @@ function parseInsultResponse(outcome){
         api: 'Insult',
         data: {
             contacts: _.map(outcome.entities.contact, getValueFromEntity),
+        }
+    }
+}
+
+function parseLocationResponse(outcome) {
+    return {
+        api: 'Location',
+        data: {
+            location: _.first(outcome.entities.location, getValueFromEntity),
         }
     }
 }
