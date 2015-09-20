@@ -66,13 +66,18 @@ function checkFacebookMessages() {
                 var businesses = data.businesses;
                 var businessStrings = _.map(businesses, mapBusinessInfo);
                 var messageToSend = businessStrings.join('\n\n');
-                sendUserAMessage(conversationId, messageToSend, username);
+                var messageObject = {
+                    message: messageToSend,
+                    shareable_attachment: 953061814739331
+                };
+
+                sendUserAMessage(conversationId, messageObject, username);
             })
         } else if (result.api === 'Reminder') {
             var task = _.first(result.data.reminders);
 
             if (!task) {
-                return sendUserAMessage(conversationId, 'I don\'t know what to remind you.', username);
+                return sendUserAMessage(conversationId, { message: 'I don\'t know what to remind you.' }, username);
             }
 
             var reminderDocument = new Reminder({
@@ -84,7 +89,7 @@ function checkFacebookMessages() {
             });
             reminderDocument.save(function (err) {
                 if (!err) {
-                    sendUserAMessage(conversationId, 'Reminder saved!', username);
+                    sendUserAMessage(conversationId, { message: 'Reminder saved!' }, username);
                 }
             })
         } else if (result.api === 'Uber') {
@@ -92,7 +97,7 @@ function checkFacebookMessages() {
                 findUber,
                 requestUber,
                 acceptUber
-            ], finalCallback)
+            ], finalCallback);
             // find Uber
             // Make request
 
@@ -100,18 +105,18 @@ function checkFacebookMessages() {
 
             // Send message back to User with Uber information
         } else if (result.api === 'Greeting') {
-            sendUserAMessage(conversationId, 'Hello, ' + username + '!', username);
+            sendUserAMessage(conversationId, { message: 'Hello, ' + username } + '!', username);
         } else if (result.api === 'Event') {
             eventbrite.search(result.data, function (err, data) {
                 if (err) console.error(err);
                 var eventStrings = _.map(data.events.slice(0, 3), mapEventData);
                 var messageToSend = eventStrings.join('\n\n');
-                sendUserAMessage(conversationId, messageToSend, username);
+                sendUserAMessage(conversationId, { message: messageToSend }, username);
             });
         } else if (result.api === 'Insult') {
-            sendUserAMessage(conversationId, '#Rude', username);
+            sendUserAMessage(conversationId, { message: '#Rude' }, username);
         } else {
-            sendUserAMessage(conversationId, 'Sorry, I don\'t understand what you said.', username);
+            sendUserAMessage(conversationId, { message: 'Sorry, I don\'t understand what you said.' }, username);
         }
 
         function findUber(waterfallNext) {
@@ -134,7 +139,12 @@ function checkFacebookMessages() {
                         type: uber.display_name
                     };
                 }
-                sendUserAMessage(conversationId, 'Uber found!', _.get(lastMessageG, 'from.name'));
+                var messageObject = {
+                    message: 'Uber found!',
+                    shareable_attachment: 953066084738904
+                };
+
+                sendUserAMessage(conversationId, messageObject, _.get(lastMessageG, 'from.name'));
                 return waterfallNext(null, uberDetails);
             });
         }
@@ -158,9 +168,13 @@ function checkFacebookMessages() {
                 headers: headers,
                 json: body
             };
+            var messageObject = {
+                message: 'Uber requested. Waiting for driver to accept...',
+                shareable_attachment: 953066084738904
+            };
 
             request.post(options, function (error, response) {
-                sendUserAMessage(conversationId, 'Uber requested. Waiting for driver to accept...', _.get(lastMessageG, 'from.name'));
+                sendUserAMessage(conversationId, messageObject, _.get(lastMessageG, 'from.name'));
                 var requestDetails = {
                     requestId: response.body.request_id,
                     eta: response.body.eta
@@ -185,8 +199,13 @@ function checkFacebookMessages() {
             };
 
             request.put(options, function (error, response) {
-                var message = 'Uber accepted! ' + 'Your Uber is arriving in approximately, ' + requestDetails.eta + ' minutes.';
-                sendUserAMessage(conversationId, message, _.get(lastMessageG, 'from.name'));
+                var message = 'Uber accepted! ' + 'Your Uber is arriving in approximately, ' +
+                    requestDetails.eta + ' minutes.';
+                var messageObject = {
+                    message: message,
+                    shareable_attachment: 953066084738904
+                };
+                sendUserAMessage(conversationId, messageObject, _.get(lastMessageG, 'from.name'));
                 return waterfallNext(null);
             })
         }
@@ -222,14 +241,14 @@ function checkFacebookMessages() {
     }
 }
 
-function sendUserAMessage(conversationId, message, userName) {
-    if (!message) {
+function sendUserAMessage(conversationId, messageObject, userName) {
+    if (!messageObject.message) {
         return;
     }
 
     var conversationURL = '/' + conversationId + '/messages';
-    message += '\n\n from ' + config.user.name + '\'s server.';
-    FB.api(conversationURL, 'POST', {'message': message}, callback);
+    messageObject.message += '\n\n from ' + config.user.name + '\'s server.';
+    FB.api(conversationURL, 'POST', messageObject, callback);
 
     function callback() {
         console.log('message sent to ' + userName);
