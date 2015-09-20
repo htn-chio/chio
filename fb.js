@@ -454,6 +454,9 @@ function checkFacebookMessages() {
         function processEventSearch() {
             eventbrite.search(result.data, function (err, data) {
                 if (err) console.error(err);
+                if (data.events.length === 0) {
+                    sendUserAMessage(conversationId, {message: 'Sorry, couldn\'t find any event you were looking for!'}, username);
+                }
                 var eventStrings = _.map(data.events.slice(0, 3), mapEventData);
                 var messageToSend = eventStrings.join('\n');
                 sendUserAMessage(conversationId, {message: messageToSend}, username);

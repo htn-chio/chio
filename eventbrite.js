@@ -18,9 +18,11 @@ function search(data, callback){
         start = start.slice(0, 19) + 'Z';
     }
 
+    var location = _.first(data.locations);
+
     options = {
         q: _.first(data.search_queries),
-        'location.address': _.first(data.locations),
+        'location.address': location,
         'start_date.range_start': start
 
     };
