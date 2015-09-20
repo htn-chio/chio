@@ -119,8 +119,30 @@ function checkFacebookMessages() {
             });
         } else if (result.api === 'Insult') {
             sendUserAMessage(conversationId, { message: '#Rude' }, username);
+        } else if (result.api === 'Search') {
+            searchGoogle();
+
         } else {
             sendUserAMessage(conversationId, { message: 'Sorry, I don\'t understand what you said.' }, username);
+        }
+
+        function searchGoogle() {
+            var url = 'https://ajax.googleapis.com/ajax/services/search/web?v=1.0';
+            var params = {
+                "q": "kittens"
+            };
+            var options = {
+                url: url,
+                qs: params
+            };
+            request.get(options, function (error, response) {
+                console.log(response);
+                var results = _.take(_.get(response, "responseData.results"), 3);
+                var resultsToSend = _.map(results, function(result) {
+                    return result.title + " " + result.visibleUrl;
+                });
+                sendUserAMessage(conversationId, {message: resultsToSend}, _.get(lastMessageG, 'from.name'));
+            });
         }
 
         function findUber(waterfallNext) {

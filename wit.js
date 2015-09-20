@@ -10,7 +10,8 @@ var FUNC_BY_INTENT = {
     insult: parseInsultResponse,
     Reminder: parseReminderResponse,
     restaurantSearch: parseYelpResponse,
-    ride: parseUberResponse
+    ride: parseUberResponse,
+    search: parseSearchResponse
 };
 
 module.exports = {
@@ -32,6 +33,7 @@ function parseText(text, callback) {
 
     function parseWitResponse(res, waterfallNext) {
         var outcome = _.max(res.outcomes, 'confidence');
+        console.log(outcome.intent);
         if (outcome.confidence < 0.7){
             return waterfallNext('Not enough confidence');
         }
@@ -69,6 +71,15 @@ function parseInsultResponse(outcome){
         api: 'Insult',
         data: {
             contacts: _.map(outcome.entities.contact, getValueFromEntity),
+        }
+    }
+}
+
+function parseSearchResponse(outcome){
+    return {
+        api: 'Search',
+        data: {
+            search_queries: _.map(outcome.entities.search_query, getValueFromEntity)
         }
     }
 }
