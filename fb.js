@@ -554,7 +554,6 @@ function sendUserAMessage(conversationId, messageObject, username) {
     }
 
     var conversationURL = '/' + conversationId + '/messages';
-    messageObject.message += '\n\n from ' + config.user.name + '\'s server.';
     FB.api(conversationURL, 'POST', messageObject, callback);
 
     function callback(error) {
@@ -584,7 +583,7 @@ function getState(conversationId, callback) {
     State.findOne({
         conversation_id: conversationId
     }, {}, { sort: { 'create_date' : -1 } }, function (error, state) {
-        if (state) {
+        if (state && state.is_active) {
             return callback(null, state);
         }
         return callback(null, false);
