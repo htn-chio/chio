@@ -90,12 +90,17 @@ function parseInsultResponse(outcome){
 }
 
 function parseLocationResponse(outcome) {
-    return {
+    var res = {
         api: 'Location',
         data: {
-            location: _.first(outcome.entities.location, getValueFromEntity)
+            location: _.first(_.map(outcome.entities.location, getValueFromEntity))
         }
     }
+    console.log(res.data.location);
+    if (!res.data.location) {
+        res.data.location = outcome._text;
+    }
+    return res;
 }
 
 function parseSearchResponse(outcome){
