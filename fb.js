@@ -372,12 +372,13 @@ function checkFacebookMessages() {
             if (business.hasOwnProperty('is_closed')) {
                 newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
             }
-            newString += '- ' + business.rating + '/5.0 ';
-            newString += business.address || '';
+            newString += '\n';
+            newString += '- ' + business.rating + '/5.0 ' + '\n';
+            newString += business.address + '\n'|| '';
             if (business.phone) {
-                newString += '\r\nTEL: ' + business.phone + ' ';
+                newString += '\r\nTEL: ' + business.phone + ' ' + '\n';
             }
-            newString += business.url || '';
+            newString += business.url + '\n'|| '';
             return newString;
         }
     }
@@ -392,7 +393,8 @@ function sendUserAMessage(conversationId, messageObject, username) {
     messageObject.message += '\n\n from ' + config.user.name + '\'s server.';
     FB.api(conversationURL, 'POST', messageObject, callback);
 
-    function callback() {
+    function callback(err, res) {
+        if (err) console.error(err)
         console.log('message sent to ' + username);
     }
 }
