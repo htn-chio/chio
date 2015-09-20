@@ -50,7 +50,6 @@ function checkFacebookMessages() {
                     }, function (error, state) {
                         if (state) {
                             if (state.message_id !== lastMessage.id) {
-                                console.log('Read a new message');
                                 wit.parseText(lastMessage.message, function (result) {
                                     var splitMessage = lastMessage.message.split(' ');
                                     if (splitMessage[0] === 'TEST') {
@@ -59,8 +58,6 @@ function checkFacebookMessages() {
                                     processResult(result, conversation)
                                 });
                                 state.message_id = lastMessage.id
-                            } else {
-                                console.log('Read an old message');
                             }
                         } else {
                             state = LastMessageRead({
