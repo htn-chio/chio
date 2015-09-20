@@ -5,6 +5,7 @@ var wit = require('node-wit');
 
 var ACCESS_TOKEN = '73NJLBMT4DZ6E7Q4OEGALQASWS7V2Y7C';
 var FUNC_BY_INTENT = {
+    date: parseDateResponse,
     eventSearch: parseEventResponse,
     greeting: parseGreetingResponse,
     insult: parseInsultResponse,
@@ -43,6 +44,14 @@ function parseText(text, callback) {
         }
         return waterfallNext(FUNC_BY_INTENT[outcome.intent](outcome));
     }
+}
+
+function parseDateResponse(outcome) {
+    return {
+        api: 'Date',
+        data: {
+            date: _.first(outcome.entities.datetime)
+        }
 }
 
 function parseGreetingResponse(outcome){
