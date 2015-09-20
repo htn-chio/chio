@@ -5,6 +5,7 @@ var FB = require('fb');
 var wit = require('./wit');
 var eventbrite = require('./eventbrite');
 var Reminder = require('./models/reminder.model.js');
+var State = require('./models/state.model.js');
 var scheduler = require('./schedule')
 var request = require('request');
 var yelp = require('yelp').createClient({
@@ -256,4 +257,40 @@ function sendUserAMessage(conversationId, messageObject, username) {
     function callback() {
         console.log('message sent to ' + username);
     }
+}
+
+function saveState(conversationId, newState) {
+    State.findOne({
+        conversation_id: conversationId
+    }, function(error, state) {
+      if (state) {
+          state = _.assign(state, newState);
+      } else {
+          state = newState;
+      }
+      state.save();
+      return state;
+    });
+}
+
+function getState(conversationId) {
+    State.findOne({
+        conversation_id: conversationId
+    }, function(error, state) {
+        if (state) {
+            return state;
+        }
+        return false;
+    })
+}
+
+function updateState(conversationId, update) {
+    State.findOneAndUpdate({
+        conversation_id: conversationId
+    }, update, { new: true }, function(error, state) {
+        if(state){
+            return state;
+        }
+        return false;
+    })
 }
