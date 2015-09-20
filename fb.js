@@ -518,8 +518,8 @@ function checkFacebookMessages() {
 
         function mapEventData(event) {
             var ret = event.name.text + '\n';
-            ret += 'Start: ' + event.start.local + '\n';
-            ret += 'End: ' + event.end.local + '\n';
+            ret += 'Start: ' + moment(event.start.local).format('ddd, MMM. D, YYYY h:mma') + '\n';
+            ret += 'End: ' + moment(event.end.local).format('ddd, MMM. D, YYYY h:mma') + '\n';
             if (!!event.vanity_url)
                 ret += event.vanity_url;
             else

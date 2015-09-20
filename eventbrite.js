@@ -9,7 +9,7 @@ var eventbrite = eventbriteAPI({
 
 module.exports = {
     search: search
-}
+};
 
 function search(data, callback){
     var start;
