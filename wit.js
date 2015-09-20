@@ -52,6 +52,7 @@ function parseDateResponse(outcome) {
         data: {
             date: _.first(outcome.entities.datetime)
         }
+    }
 }
 
 function parseGreetingResponse(outcome){
