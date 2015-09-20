@@ -73,7 +73,7 @@ function checkFacebookMessages() {
                 };
 
                 sendUserAMessage(conversationId, messageObject, username);
-            })
+            });
         } else if (result.api === 'Reminder') {
             var task = _.first(result.data.reminders);
 
@@ -94,7 +94,7 @@ function checkFacebookMessages() {
                     sendUserAMessage(conversationId, { message: 'Reminder saved!' }, username);
                     scheduler.scheduleReminder(reminderDocument);
                 }
-            })
+            });
         } else if (result.api === 'Uber') {
             async.waterfall([
                 findUber,
@@ -214,7 +214,7 @@ function checkFacebookMessages() {
         }
 
         function finalCallback(error) {
-            console.log('done')
+            console.log('done');
         }
 
         function mapEventData(event) {
