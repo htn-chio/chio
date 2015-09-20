@@ -27,9 +27,6 @@ var fbController = {
 module.exports = fbController;
 
 function checkFacebookMessages() {
-    var conversationId;
-    var lastMessageG;
-    var username;
     var chioBotConversationURL = '/952568054788707/conversations';
 
     FB.api(chioBotConversationURL, parseConversations);
@@ -44,16 +41,19 @@ function checkFacebookMessages() {
                 var lastSenderId = _.get(lastMessage, 'from.id');
 
                 if (lastSenderId !== CHIO_BOT_ID) {
-                    wit.parseText(lastMessage.message, processResult);
-                    conversationId = conversation.id;
-                    lastMessageG = lastMessage;
-                    username = _.get(lastMessageG, 'from.name');
+                    wit.parseText(lastMessage.message, function(result){
+                        processResult(result, conversation)
+                    });
                 }
             });
         }
     }
 
-    function processResult(result) {
+    function processResult(result, conversation) {
+        var conversationId = conversation.id;
+        var lastMessage = _.first(_.get(conversation, 'messages.data'));
+        var username = _.get(lastMessage, 'from.name');
+
         if (result.api === 'Yelp') {
             var searchTerm = _.first(result.data.search_queries) || 'food';
             var location = _.first(result.data.locations) || '200 University Ave. W, Waterloo, ON';
@@ -147,7 +147,7 @@ function checkFacebookMessages() {
                     shareable_attachment: 953066084738904
                 };
 
-                sendUserAMessage(conversationId, messageObject, _.get(lastMessageG, 'from.name'));
+                sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
                 return waterfallNext(null, uberDetails);
             });
         }
@@ -177,7 +177,7 @@ function checkFacebookMessages() {
             };
 
             request.post(options, function (error, response) {
-                sendUserAMessage(conversationId, messageObject, _.get(lastMessageG, 'from.name'));
+                sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
                 var requestDetails = {
                     requestId: response.body.request_id,
                     eta: response.body.eta
@@ -208,7 +208,7 @@ function checkFacebookMessages() {
                     message: message,
                     shareable_attachment: 953066084738904
                 };
-                sendUserAMessage(conversationId, messageObject, _.get(lastMessageG, 'from.name'));
+                sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
                 return waterfallNext(null);
             })
         }
@@ -244,7 +244,7 @@ function checkFacebookMessages() {
     }
 }
 
-function sendUserAMessage(conversationId, messageObject, userName) {
+function sendUserAMessage(conversationId, messageObject, username) {
     if (!messageObject.message) {
         return;
     }
