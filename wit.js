@@ -10,7 +10,8 @@ var FUNC_BY_INTENT = {
     insult: parseInsultResponse,
     Reminder: parseReminderResponse,
     restaurantSearch: parseYelpResponse,
-    ride: parseUberResponse
+    ride: parseUberResponse,
+    viewMore: parseViewMoreResponse
 };
 
 module.exports = {
@@ -104,6 +105,15 @@ function parseUberResponse(outcome){
             start_location: _.map(outcome.entities.start, getValueFromEntity),
             end_location: _.map(outcome.entities.end, getValueFromEntity),
             contacts: _.map(outcome.entities.contact, getValueFromEntity),
+        }
+    }
+}
+
+function parseViewMoreResponse(outcome) {
+    return {
+        api: 'ViewMore',
+        data: {
+            number: _.first(outcome.entities.number, getValueFromEntity),
         }
     }
 }
