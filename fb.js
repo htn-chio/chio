@@ -9,7 +9,8 @@ var geocode = require('./geocode.js');
 var moment = require('moment');
 var Reminder = require('./models/reminder.model.js');
 var State = require('./models/state.model.js');
-var scheduler = require('./schedule')
+var scheduler = require('./schedule');
+var sleep = require('sleep');
 var request = require('request');
 var yelp = require('yelp').createClient({
     consumer_key: "XZYHgCOEsUws1-HGNAKG6w",
@@ -152,7 +153,7 @@ function checkFacebookMessages() {
                 var businesses = _.take(businesses, 3);
                 var businessStrings = _.map(businesses, mapBusinessInfo);
                 var messageToSend = businessStrings.join('\n');
-                messageToSend += '\n' + 'Type "View More" to see more results!';
+                messageToSend += '\n' + 'Type "view more" to see more results!';
                 var messageObject = {
                     message: messageToSend,
                     shareable_attachment: 953061814739331
@@ -177,7 +178,7 @@ function checkFacebookMessages() {
             var task = _.first(result.data.reminders);
 
             if (!task) {
-                return sendUserAMessage(conversationId, {message: 'I don\'t know what to remind you.'}, username);
+                return sendUserAMessage(conversationId, {message: "I'm not sure what you mean by that. Could you say that again?"}, username);
             }
             var reminderDate = _.first(result.data.datetimes);
             if (!reminderDate) {
@@ -190,7 +191,7 @@ function checkFacebookMessages() {
                     state_type: 'Reminder'
                 });
                 saveState(conversationId, state);
-                sendUserAMessage(conversationId, {message: 'Please give a reminder time.'}, username);
+                sendUserAMessage(conversationId, {message: 'When should I remind you?'}, username);
                 return;
             }
 
@@ -204,7 +205,7 @@ function checkFacebookMessages() {
             });
             reminderDocument.save(function (err) {
                 if (!err) {
-                    sendUserAMessage(conversationId, {message: 'Your reminder \"'+ reminderDocument.task +' \" has been saved!'}, username);
+                    sendUserAMessage(conversationId, { message: 'Okay, I will remind you to ' + reminderDocument.task + '.'}, username);
                     scheduler.scheduleReminder(reminderDocument);
                 }
             });
@@ -280,13 +281,13 @@ function checkFacebookMessages() {
                     };
                 }
                 var messageObject = {
-                    message: 'Uber found!',
-                    shareable_attachment: 953066084738904
+                    message: 'I found you an Uber!'
                 };
 
                 type = uber.display_name;
 
                 sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
+                sleep.usleep(500);
                 return waterfallNext(null, uberDetails);
             });
         }
@@ -311,12 +312,12 @@ function checkFacebookMessages() {
                 json: body
             };
             var messageObject = {
-                message: 'Uber requested. Waiting for driver to accept...',
-                shareable_attachment: 953066084738904
+                message: 'Uber requested. I\'m waiting for driver to accept...'
             };
 
             request.post(options, function (error, response) {
                 sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
+                sleep.sleep(1);
                 var requestDetails = {
                     requestId: response.body.request_id,
                     eta: response.body.eta
@@ -344,10 +345,10 @@ function checkFacebookMessages() {
                 var message = 'Uber accepted! ' + 'Your Uber is arriving in approximately, ' +
                     requestDetails.eta + ' minutes.';
                 var messageObject = {
-                    message: message,
-                    shareable_attachment: 953066084738904
+                    message: message
                 };
                 sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
+                sleep.usleep(250);
                 return waterfallNext(null);
             })
         }
@@ -375,7 +376,7 @@ function checkFacebookMessages() {
                     return price.display_name === 'uberX';
                 });
                 var messageObject = {
-                    message: 'Price estimate for your ' + type + ': ' + price.estimate,
+                    message: 'Price estimate for your ' + type + ': ' + price.estimate + '.',
                     shareable_attachment: 953066084738904
                 };
 
@@ -512,7 +513,7 @@ function checkFacebookMessages() {
         }
 
         function processBadInput() {
-            sendUserAMessage(conversationId, {message: 'Sorry, I don\'t understand what you said.'}, username);
+            sendUserAMessage(conversationId, {message: 'Sorry, I didn\'t understand what you meant by that.'}, username);
         }
 
         function mapEventData(event) {

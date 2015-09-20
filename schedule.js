@@ -34,7 +34,7 @@ function scheduleReminder(reminder) {
 
 function sendUserAMessage(reminder) {
     var conversationURL = '/' + reminder.conversation_id + '/messages';
-    FB.api(conversationURL, 'POST', {'message': reminder.task}, callback);
+    FB.api(conversationURL, 'POST', {'message': 'REMINDER: ' + reminder.task}, callback);
 
     function callback() {
         var query = {
