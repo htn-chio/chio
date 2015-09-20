@@ -149,11 +149,7 @@ function checkFacebookMessages() {
                 sort: 1 // 0 for best matched, 1 for distance, 2 for best rated
             };
             yelp.search(options, function (error, data) {
-                var businesses = data.businesses;
-                var businesses = _.take(businesses, 3);
-                var businessStrings = _.map(businesses, mapBusinessInfo);
-                var messageToSend = businessStrings.join('\n');
-                messageToSend += '\n' + 'Type "view more" to see more results!';
+                var messageToSend = printYelpResponse(data.businesses, 0, 3);
                 var messageObject = {
                     message: messageToSend,
                     shareable_attachment: 953061814739331
@@ -475,20 +471,16 @@ function checkFacebookMessages() {
                 },
                 function (currentState) {
                     if (currentState && currentState.state_type === 'Yelp') {
-                        var businesses = currentState.outcome;
-                        var lastIndex = currentState.meta_data.last_seen_index;
+                        var startIndex = currentState.meta_data.last_seen_index;
                         var quantity = (!!result.data.number) ? result.data.number : 3;
-                        var businesses = _.slice(businesses, lastIndex, lastIndex + quantity);
-                        var businessStrings = _.map(businesses, mapBusinessInfo);
-                        var messageToSend = businessStrings.join('\n');
-                        messageToSend += '\n' + 'Type "view more" to see more results!';
+                        messageToSend = printYelpResponse(currentState.outcome, startIndex, startIndex + quantity);
                         var messageObject = {
                             message: messageToSend,
                             shareable_attachment: 953061814739331
                         };
 
                         var update = {
-                            "meta_data.last_seen_index": lastIndex + quantity
+                            "meta_data.last_seen_index": startIndex + quantity
                         };
                         updateState(conversationId, update);
                         sendUserAMessage(conversationId, messageObject, username);
@@ -509,7 +501,7 @@ function checkFacebookMessages() {
             request.get(options, function (error, response) {
                 var results = _.take(_.get(JSON.parse(response.body), "responseData.results"), 3);
                 var resultsToSend = _.map(results, function (result) {
-                    return result.title.replace(/<\/?[^>]+(>|$)/g, "") + " " + result.visibleUrl + '\n\n';
+                    return result.title.replace(/<\/?[^>]+(>|$)/g, "") + "\n" + result.visibleUrl + '\n\n';
                 });
                 var messageObject = {
                     message: resultsToSend.join(''),
@@ -522,38 +514,51 @@ function checkFacebookMessages() {
         function processBadInput() {
             sendUserAMessage(conversationId, {message: 'Sorry, I didn\'t understand what you meant by that.'}, username);
         }
-
-        function mapEventData(event) {
-            var ret = event.name.text + '\n';
-            ret += 'Start: ' + moment(event.start.local).format('ddd, MMM. D, YYYY h:mma') + '\n';
-            ret += 'End: ' + moment(event.end.local).format('ddd, MMM. D, YYYY h:mma') + '\n';
-            if (!!event.vanity_url)
-                ret += event.vanity_url;
-            else
-                ret += event.url;
-            ret += '\n';
-            return ret;
-        }
-
-        function mapBusinessInfo(business) {
-            var newString = business.name;
-            if (business.hasOwnProperty('is_closed')) {
-                newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
-            }
-            newString += '\n';
-            newString += business.rating + '/5.0 ' + '\n';
-            if (business.location.address) {
-                newString += business.location.address + '\n';
-            }
-            if (business.phone) {
-                newString += 'TEL: ' + business.phone + ' ' + '\n';
-            }
-            if (business.url) {
-                newString += business.url + '\n';
-            }
-            return newString;
-        }
     }
+}
+
+function mapEventData(event) {
+    var ret = event.name.text + '\n';
+    ret += 'Start: ' + moment(event.start.local).format('ddd, MMM. D, YYYY h:mma') + '\n';
+    ret += 'End: ' + moment(event.end.local).format('ddd, MMM. D, YYYY h:mma') + '\n';
+    if (!!event.vanity_url)
+        ret += event.vanity_url;
+    else
+        ret += event.url;
+    ret += '\n';
+    return ret;
+}
+
+function printYelpResponse(businesses, startIndex, endIndex) {
+    var numBusinesses = businesses.length;
+    var businesses = _.slice(businesses, startIndex, endIndex);
+    var businessStrings = _.map(businesses, mapBusinessInfo);
+    businessStrings = _.map(businessStrings, function(businessString, i) {
+        return (startIndex + 1 + i) + ') ' + businessString;
+    });
+    var messageToSend = businessStrings.join('\n');
+    messageToSend += '\n' + 'Viewed ' + endIndex + ' out of ' + numBusinesses;
+    return messageToSend;
+
+}
+
+function mapBusinessInfo(business) {
+    var newString = business.name;
+    if (business.hasOwnProperty('is_closed')) {
+        newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
+    }
+    newString += '\n';
+    newString += business.rating + '/5.0 ' + '\n';
+    if (business.location.address) {
+        newString += business.location.address + '\n';
+    }
+    if (business.phone) {
+        newString += 'TEL: ' + business.phone + ' ' + '\n';
+    }
+    if (business.url) {
+        newString += business.url + '\n';
+    }
+    return newString;
 }
 
 function sendUserAMessage(conversationId, messageObject, username) {
