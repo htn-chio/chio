@@ -185,8 +185,8 @@ function checkFacebookMessages() {
                 var uberState = new State({
                     conversation_id: conversationId,
                     meta_data: {
-                        start_location: startLocation,
-                        end_location: endLocation
+                        start_location: startLocation || {},
+                        end_location: endLocation || {}
                     },
                     state_type: 'Uber',
                     create_date: moment()
@@ -323,7 +323,7 @@ function checkFacebookMessages() {
             };
 
             request.get(options, function (error, response) {
-                var price = _.find(JSON.parse(response.body).prices, function(price) {
+                var price = _.find(JSON.parse(response.body).prices, function (price) {
                     return price.display_name === 'uberX';
                 });
                 var messageObject = {
@@ -337,6 +337,7 @@ function checkFacebookMessages() {
         }
 
         function finalCallback(error) {
+            updateState(conversationId, { "is_active": false });
             console.log('done');
         }
 
@@ -360,10 +361,12 @@ function checkFacebookMessages() {
                 getState(conversationId, waterfallNext);
             }
 
-            function determineNextAction(currentState, waterfallNext) {
+            function determineNextAction(currentState) {
                 if (currentState) {
-                    startLocation = currentState.meta_data.start_location;
-                    endLocation = currentState.meta_data.end_location;
+                    if (currentState.is_active) {
+                        startLocation = currentState.meta_data.start_location;
+                        endLocation = currentState.meta_data.end_location;
+                    }
 
                     if (_.isEmpty(startLocation)) {
                         startLocation = result.data.location;
@@ -380,6 +383,8 @@ function checkFacebookMessages() {
                             acceptUber,
                             getPriceEstimate
                         ], finalCallback);
+                    } else {
+                        promptLocation('endLocation');
                     }
                 }
             }
@@ -475,11 +480,11 @@ function checkFacebookMessages() {
             }
             newString += '\n';
             newString += '- ' + business.rating + '/5.0 ' + '\n';
-            newString += business.address + '\n'|| '';
+            newString += business.address + '\n' || '';
             if (business.phone) {
                 newString += '\r\nTEL: ' + business.phone + ' ' + '\n';
             }
-            newString += business.url + '\n'|| '';
+            newString += business.url + '\n' || '';
             return newString;
         }
     }
@@ -503,18 +508,14 @@ function sendUserAMessage(conversationId, messageObject, username) {
     }
 }
 
-function saveState(conversationId, state_type, newState) {
-    State.findOne({
-        conversation_id: conversationId
-    }, function (error, state) {
-        if (state) {
-            state = _.assign(state, newState);
-        } else {
-            state = newState;
-        }
-        state.save();
-        return state;
-    });
+function saveState(conversationId, newState) {
+    newState = newState.toObject();
+    delete newState._id;
+    State.update({conversation_id: conversationId}, newState,
+        {upsert: true, 'new': true},
+        function (error, state) {
+            return state;
+        });
 }
 
 function getState(conversationId, callback) {
