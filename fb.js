@@ -287,7 +287,7 @@ function checkFacebookMessages() {
                 type = uber.display_name;
 
                 sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
-                sleep.usleep(500);
+                sleep.usleep(300000);
                 return waterfallNext(null, uberDetails);
             });
         }
@@ -317,7 +317,7 @@ function checkFacebookMessages() {
 
             request.post(options, function (error, response) {
                 sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
-                sleep.sleep(1);
+                sleep.usleep(2000000);
                 var requestDetails = {
                     requestId: response.body.request_id,
                     eta: response.body.eta
@@ -348,7 +348,7 @@ function checkFacebookMessages() {
                     message: message
                 };
                 sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
-                sleep.usleep(250);
+                sleep.usleep(1000000);
                 return waterfallNext(null);
             })
         }
@@ -474,7 +474,7 @@ function checkFacebookMessages() {
                         var businesses = _.slice(businesses, lastIndex, lastIndex + quantity);
                         var businessStrings = _.map(businesses, mapBusinessInfo);
                         var messageToSend = businessStrings.join('\n');
-                        messageToSend += '\n' + 'Type "View More" to see more results!';
+                        messageToSend += '\n' + 'Type "view more" to see more results!';
                         var messageObject = {
                             message: messageToSend,
                             shareable_attachment: 953061814739331
@@ -593,7 +593,7 @@ function getState(conversationId, callback) {
 
 function updateState(conversationId, update) {
     State.findOneAndUpdate({
-        conversation_id: conversationId,
+        conversation_id: conversationId
     }, update, {sort: {'create_date': -1 }, new: true}, function (error, state) {
         if (state) {
             return state;
@@ -603,5 +603,5 @@ function updateState(conversationId, update) {
 }
 
 function sendReminderSavedMessage(conversationId, username, reminder) {
-    sendUserAMessage(conversationId, {message: 'Your reminder \"'+ reminder.task +' \" has been saved for '+ reminder.reminder_date +'!'}, username);
+    sendUserAMessage(conversationId, {message: 'I will remind you to \"'+ reminder.task +'\" ' + moment(reminder.reminder_date).fromNow() +'!'}, username);
 }

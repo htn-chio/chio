@@ -3,6 +3,7 @@ var config = require('config');
 var schedule = require('node-schedule');
 var Reminder = require('./models/reminder.model');
 var FB = require('fb');
+var moment = require('moment');
 module.exports = {
     init: init,
     scheduleReminder: scheduleReminder
@@ -34,8 +35,14 @@ function scheduleReminder(reminder) {
 
 function sendUserAMessage(reminder) {
     var conversationURL = '/' + reminder.conversation_id + '/messages';
+    var message = 'REMINDER: ' + reminder.task + '.\n';
+    if (reminder.location) {
+        message += 'LOCATION: ' + reminder.location + '.\n';
+    }
+    message += 'Set ' + moment(reminder.created_date).fromNow() + '.';
     FB.api(conversationURL, 'POST', {
-        'message': 'REMINDER: ' + reminder.task + '. LOCATION: ' + reminder.location + '. Set at: '+ reminder.created_date + '!'}, callback);
+        'message': message
+    }, callback);
 
     function callback() {
         var query = {
