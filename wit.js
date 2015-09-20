@@ -53,7 +53,7 @@ function parseDateResponse(outcome) {
     return {
         api: 'Date',
         data: {
-            date: _.first(outcome.entities.datetime)
+            date: _.first(_.map(outcome.entities.datetime, getValueFromEntity))
         }
     }
 }
@@ -146,7 +146,7 @@ function parseViewMoreResponse(outcome) {
     return {
         api: 'ViewMore',
         data: {
-            number: _.first(outcome.entities.number, getValueFromEntity),
+            number: _.first(_.map(outcome.entities.number, getValueFromEntity)),
         }
     }
 }

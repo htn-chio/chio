@@ -83,6 +83,7 @@ function checkFacebookMessages() {
         var username = _.get(lastMessage, 'from.name');
         var start_latlng, end_latlng, type, startLocation, endLocation;
         var FUNCTIONS_BY_INTENT = {
+            "Date": processDate,
             "Yelp": processYelp,
             "Reminder": processReminder,
             "Uber": processUber,
@@ -104,6 +105,39 @@ function checkFacebookMessages() {
             processBadInput();
         }
 
+        function processDate() {
+            async.waterfall([
+                function (waterfallNext) {
+                    getState(conversationId, waterfallNext);
+                },
+                function (currentState) {
+                    if (currentState && currentState.state_type === 'Reminder'){
+                        reminder = currentState.outcome;
+                        if (!!result.data.date){
+                            var reminderDocument = new Reminder({
+                                conversation_id: conversationId,
+                                username: username,
+                                status: 'scheduled',
+                                reminder_date: result.data.date,
+                                location: _.first(reminder.locations),
+                                task: _.first(reminder.reminders)
+                            });
+                            reminderDocument.save(function (err) {
+                                if (!err) {
+                                    scheduler.scheduleReminder(reminderDocument);
+                                }
+                            });
+                            var update = {
+                                is_active: false
+                            };
+                            updateState(conversationId, update);
+                            sendUserAMessage(conversationId, {message: 'Your reminder \"'+ reminderDocument.task +' \" has been saved!'}, username);
+                        }
+                    }
+                }]);
+        }
+
+
         function processYelp() {
             var searchTerm = _.first(result.data.search_queries) || 'food';
             var location = _.first(result.data.locations) || '200 University Ave. W, Waterloo, ON';
@@ -117,7 +151,7 @@ function checkFacebookMessages() {
                 var businesses = data.businesses;
                 var businesses = _.take(businesses, 3);
                 var businessStrings = _.map(businesses, mapBusinessInfo);
-                var messageToSend = businessStrings.join('\n\n');
+                var messageToSend = businessStrings.join('\n');
                 messageToSend += '\n' + 'Type "View More" to see more results!';
                 var messageObject = {
                     message: messageToSend,
@@ -145,18 +179,32 @@ function checkFacebookMessages() {
             if (!task) {
                 return sendUserAMessage(conversationId, {message: 'I don\'t know what to remind you.'}, username);
             }
+            var reminderDate = _.first(result.data.datetimes);
+            if (!reminderDate) {
+                var state = new State({
+                    conversation_id: conversationId,
+                    create_date: moment(),
+                    is_active: true,
+                    outcome: result.data,
+                    meta_data: {},
+                    state_type: 'Reminder'
+                });
+                saveState(conversationId, state);
+                sendUserAMessage(conversationId, {message: 'Please give a reminder time.'}, username);
+                return;
+            }
 
             var reminderDocument = new Reminder({
                 conversation_id: conversationId,
                 username: username,
                 status: 'scheduled',
-                reminder_date: _.first(result.data.datetimes),
+                reminder_date: reminderDate,
                 location: _.first(result.data.locations),
                 task: task
             });
             reminderDocument.save(function (err) {
                 if (!err) {
-                    sendUserAMessage(conversationId, {message: 'Reminder saved!'}, username);
+                    sendUserAMessage(conversationId, {message: 'Your reminder \"'+ reminderDocument.task +' \" has been saved!'}, username);
                     scheduler.scheduleReminder(reminderDocument);
                 }
             });
@@ -403,7 +451,7 @@ function checkFacebookMessages() {
             eventbrite.search(result.data, function (err, data) {
                 if (err) console.error(err);
                 var eventStrings = _.map(data.events.slice(0, 3), mapEventData);
-                var messageToSend = eventStrings.join('\n\n');
+                var messageToSend = eventStrings.join('\n');
                 sendUserAMessage(conversationId, {message: messageToSend}, username);
             });
         }
@@ -424,7 +472,7 @@ function checkFacebookMessages() {
                         var quantity = (!!result.data.number) ? result.data.number : 3;
                         var businesses = _.slice(businesses, lastIndex, lastIndex + quantity);
                         var businessStrings = _.map(businesses, mapBusinessInfo);
-                        var messageToSend = businessStrings.join('\n\n');
+                        var messageToSend = businessStrings.join('\n');
                         messageToSend += '\n' + 'Type "View More" to see more results!';
                         var messageObject = {
                             message: messageToSend,
@@ -432,7 +480,7 @@ function checkFacebookMessages() {
                         };
 
                         var update = {
-                            "meta_data.last_seen_index": lastIndex + 3
+                            "meta_data.last_seen_index": lastIndex + quantity
                         };
                         updateState(conversationId, update);
                         sendUserAMessage(conversationId, messageObject, username);
@@ -475,6 +523,7 @@ function checkFacebookMessages() {
                 ret += event.vanity_url;
             else
                 ret += event.url;
+            ret += '\n';
             return ret;
         }
 
@@ -484,12 +533,16 @@ function checkFacebookMessages() {
                 newString += business.is_closed ? ' (CLOSED) ' : ' (OPEN) ';
             }
             newString += '\n';
-            newString += '- ' + business.rating + '/5.0 ' + '\n';
-            newString += business.address + '\n' || '';
-            if (business.phone) {
-                newString += '\r\nTEL: ' + business.phone + ' ' + '\n';
+            newString += business.rating + '/5.0 ' + '\n';
+            if (business.location.address) {
+                newString += business.location.address + '\n';
             }
-            newString += business.url + '\n' || '';
+            if (business.phone) {
+                newString += 'TEL: ' + business.phone + ' ' + '\n';
+            }
+            if (business.url) {
+                newString += business.url + '\n';
+            }
             return newString;
         }
     }
@@ -530,7 +583,7 @@ function saveState(conversationId, newState) {
 function getState(conversationId, callback) {
     State.findOne({
         conversation_id: conversationId
-    }, function (error, state) {
+    }, {}, { sort: { 'create_date' : -1 } }, function (error, state) {
         if (state) {
             return callback(null, state);
         }
@@ -540,8 +593,8 @@ function getState(conversationId, callback) {
 
 function updateState(conversationId, update) {
     State.findOneAndUpdate({
-        conversation_id: conversationId
-    }, update, {new: true}, function (error, state) {
+        conversation_id: conversationId,
+    }, update, {sort: {'create_date': -1 }, new: true}, function (error, state) {
         if (state) {
             return state;
         }
