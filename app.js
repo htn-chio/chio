@@ -18,7 +18,6 @@ mongoose.connection.once('open', function(callback) {
 	console.log('yaaaay, connected');
 });
 
-
 var app = express();
 var port = 3000;
 var OAuth = require('oauth'), OAuth2 = OAuth.OAuth2;
