@@ -238,7 +238,7 @@ function checkFacebookMessages() {
         function searchGoogle() {
             var url = 'https://ajax.googleapis.com/ajax/services/search/web?v=1.0';
             var params = {
-                "q": "kittens"
+                "q": _.first(result.data.search_queries)
             };
             var options = {
                 url: url,
