@@ -4,6 +4,7 @@ var _ = require('lodash');
 var FB = require('fb');
 var wit = require('./wit');
 var eventbrite = require('./eventbrite');
+var LastMessageRead = require('./models/LastMessageRead.model.js');
 var moment = require('moment');
 var Reminder = require('./models/reminder.model.js');
 var State = require('./models/state.model.js');
@@ -28,6 +29,7 @@ var fbController = {
 
 module.exports = fbController;
 
+
 function checkFacebookMessages() {
     var chioBotConversationURL = '/722653077866736/conversations';
 
@@ -40,14 +42,34 @@ function checkFacebookMessages() {
             _.forEach(conversations, function (conversation) {
                 var lastMessage = _.first(_.get(conversation, 'messages.data'));
                 var lastSenderId = _.get(lastMessage, 'from.id');
-
                 if (lastSenderId !== CHIO_BOT_ID) {
-                    wit.parseText(lastMessage.message, function (result) {
-                        var splitMessage = lastMessage.message.split(' ');
-                        if (splitMessage[0] === 'TEST') {
-                            return processResult(result, conversation, splitMessage[1]);
+                    LastMessageRead.findOne({
+                        conversation_id: conversation.id,
+                    }, function (error, state) {
+                        if (state) {
+                            if (state.message_id !== lastMessage.id) {
+                                console.log('Read a new message');
+                                wit.parseText(lastMessage.message, function (result) {
+                                    var splitMessage = lastMessage.message.split(' ');
+                                    if (splitMessage[0] === 'TEST') {
+                                        return processResult(result, conversation, splitMessage[1]);
+                                    }
+                                    processResult(result, conversation)
+                                });
+                                state.message_id = lastMessage.id
+                            } else {
+                                console.log('Read an old message');
+                            }
+                        } else {
+                            state = LastMessageRead({
+                                conversation_id: conversation.id,
+                                message_id: lastMessage.id
+                            });
+
                         }
-                        processResult(result, conversation)
+                        state.save();
+                        return state;
+
                     });
                 }
             });
@@ -393,7 +415,7 @@ function sendUserAMessage(conversationId, messageObject, username) {
     FB.api(conversationURL, 'POST', messageObject, callback);
 
     function callback(error) {
-        if (error) {
+        if (error.error) {
             console.error('ERROR: ' + error.error.message);
         } else {
             console.log('message sent to ' + username);
