@@ -299,7 +299,11 @@ function checkFacebookMessages() {
                 var resultsToSend = _.map(results, function (result) {
                     return result.title.replace(/<\/?[^>]+(>|$)/g, "") + " " + result.visibleUrl + '\n\n';
                 });
-                sendUserAMessage(conversationId, {message: resultsToSend.join('')}, username);
+                var messageObject = {
+                    message: resultsToSend.join(''),
+                    shareable_attachment: 953071651405014
+                };
+                sendUserAMessage(conversationId, messageObject, username);
             });
         }
 
