@@ -15,8 +15,8 @@ function locationToGeocode(location, callback){
     url = URL + location;
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
-            callback(null, _.first(_.first(JSON.parse(response.body).results).locations).latLng);
+            return callback(null, _.first(_.first(JSON.parse(response.body).results).locations).latLng);
         }
-        callback(error, null);
+        return callback(error, null);
     });
 }

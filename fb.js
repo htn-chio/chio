@@ -81,7 +81,7 @@ function checkFacebookMessages() {
         var conversationId = conversation.id;
         var lastMessage = _.first(_.get(conversation, 'messages.data'));
         var username = _.get(lastMessage, 'from.name');
-        var type;
+        var start_latlng, end_latlng, type, startLocation, endLocation;
         var FUNCTIONS_BY_INTENT = {
             "Yelp": processYelp,
             "Reminder": processReminder,
@@ -134,7 +134,7 @@ function checkFacebookMessages() {
                     },
                     state_type: 'Yelp'
                 });
-                saveState(conversationId, 'Yelp', newState);
+                saveState(conversationId, newState);
                 sendUserAMessage(conversationId, messageObject, username);
             });
         }
@@ -163,12 +163,12 @@ function checkFacebookMessages() {
         }
 
         function processUber() {
-            var startLocation = result.start_location;
-            var endLocation = result.end_location;
+            var startLocation = _.first(result.data.start_location);
+            var endLocation = _.first(result.data.end_location);
 
-            if (!startLocation || !endLocation) {
+            if (_.isEmpty(startLocation) || _.isEmpty(endLocation)) {
                 createState();
-                var location = !startLocation ? 'startLocation' : 'endLocation';
+                var location = _.isEmpty(startLocation) ? 'startLocation' : 'endLocation';
                 return promptLocation(location);
             } else {
                 async.waterfall([
@@ -183,11 +183,12 @@ function checkFacebookMessages() {
 
             function createState() {
                 var uberState = new State({
+                    conversation_id: conversationId,
                     meta_data: {
                         start_location: startLocation,
                         end_location: endLocation
                     },
-                    type: 'Uber',
+                    state_type: 'Uber',
                     create_date: moment()
                 });
                 saveState(conversationId, uberState);
@@ -195,26 +196,28 @@ function checkFacebookMessages() {
         }
 
         function getStartLocation(waterfallNext) {
-            var startLocation = result.start_location;
+            var start_location = result.start_location || startLocation;
+            start_location = start_location.value || start_location.toString();
 
-            geocode.locationToGeocode(startLocation, waterfallNext)
+            geocode.locationToGeocode(start_location, waterfallNext)
         }
 
-        function getEndLocation(waterfallNext) {
-            var endLocation = result.end_location;
+        function getEndLocation(startLoc, waterfallNext) {
+            var end_location = result.end_location || endLocation;
+            end_location = end_location.value || end_location.toString();
+            start_latlng = startLoc;
 
-            geocode.locationToGeocode(endLocation, waterfallNext)
+            geocode.locationToGeocode(end_location, waterfallNext)
         }
 
-        function findUber(start_latlng, end_latlng, waterfallNext) {
-            console.log(start_latlng);
-            console.log(end_latlng);
+        function findUber(endLoc, waterfallNext) {
+            end_latlng = endLoc;
             var url = 'https://sandbox-api.uber.com/v1/products';
             var params = {
-                "server_token": "AhNNYnBNwt_BDiHL0hPNGUuEHXpHpO21gvNNVlJL",
-                "longitude": -80.5400,
-                "latitude": 43.4689
+                "server_token": "AhNNYnBNwt_BDiHL0hPNGUuEHXpHpO21gvNNVlJL"
             };
+            params.longitude = start_latlng.lng.toString() || "-80.5400";
+            params.latitude = start_latlng.lat.toString() || "43.4689";
             var options = {
                 url: url,
                 qs: params
@@ -247,12 +250,12 @@ function checkFacebookMessages() {
                 "Content-Type": "application/json"
             };
             var body = {
-                "product_id": uberDetails.productId,
-                "start_longitude": "-80.5400",
-                "start_latitude": "43.4689",
-                "end_longitude": "-79.4000",
-                "end_latitude": "43.7000"
+                "product_id": uberDetails.productId
             };
+            body.start_longitude = start_latlng.lng.toString() || "-80.5400";
+            body.start_latitude = start_latlng.lat.toString() || "43.4689";
+            body.end_longitude = end_latlng.lng.toString() || "-79.4000";
+            body.end_latitude = end_latlng.lat.toString() || "43.7000";
 
             var options = {
                 url: url,
@@ -310,6 +313,10 @@ function checkFacebookMessages() {
                 "end_longitude": "-79.4000",
                 "end_latitude": "43.7000"
             };
+            params.start_longitude = start_latlng.lng.toString() || "-80.5400";
+            params.start_latitude = start_latlng.lat.toString() || "43.4689";
+            params.end_longitude = end_latlng.lng.toString() || "-79.4000";
+            params.end_latitude = end_latlng.lat.toString() || "43.7000";
             var options = {
                 url: priceUrl,
                 qs: params
@@ -355,10 +362,10 @@ function checkFacebookMessages() {
 
             function determineNextAction(currentState, waterfallNext) {
                 if (currentState) {
-                    var startLocation = currentState.meta_data.start_location;
-                    var endLocation = currentState.meta_data.end_location;
+                    startLocation = currentState.meta_data.start_location;
+                    endLocation = currentState.meta_data.end_location;
 
-                    if (!startLocation) {
+                    if (_.isEmpty(startLocation)) {
                         startLocation = result.data.location;
                     } else {
                         endLocation = result.data.location;
@@ -366,6 +373,8 @@ function checkFacebookMessages() {
 
                     if (endLocation) {
                         async.waterfall([
+                            getStartLocation,
+                            getEndLocation,
                             findUber,
                             requestUber,
                             acceptUber,
@@ -396,7 +405,7 @@ function checkFacebookMessages() {
         function processViewMore() {
             async.waterfall([
                 function (waterfallNext) {
-                    getState(conversationId, 'Yelp', waterfallNext);
+                    getState(conversationId, waterfallNext);
                 },
                 function (currentState) {
                     if (currentState && currentState.state_type === 'Yelp') {
@@ -496,8 +505,7 @@ function sendUserAMessage(conversationId, messageObject, username) {
 
 function saveState(conversationId, state_type, newState) {
     State.findOne({
-        conversation_id: conversationId,
-        state_type: state_type
+        conversation_id: conversationId
     }, function (error, state) {
         if (state) {
             state = _.assign(state, newState);
@@ -509,10 +517,9 @@ function saveState(conversationId, state_type, newState) {
     });
 }
 
-function getState(conversationId, state_type, callback) {
+function getState(conversationId, callback) {
     State.findOne({
-        conversation_id: conversationId,
-        state_type: state_type
+        conversation_id: conversationId
     }, function (error, state) {
         if (state) {
             return callback(null, state);
@@ -521,10 +528,9 @@ function getState(conversationId, state_type, callback) {
     })
 }
 
-function updateState(conversationId, state_type, update) {
+function updateState(conversationId, update) {
     State.findOneAndUpdate({
-        conversation_id: conversationId,
-        state_type: state_type
+        conversation_id: conversationId
     }, update, {new: true}, function (error, state) {
         if (state) {
             return state;
