@@ -120,13 +120,13 @@ function checkFacebookMessages() {
         } else if (result.api === 'Insult') {
             sendUserAMessage(conversationId, { message: '#Rude' }, username);
         } else if (result.api === 'Search') {
-            searchGoogle();
+            searchGoogle(username);
 
         } else {
             sendUserAMessage(conversationId, { message: 'Sorry, I don\'t understand what you said.' }, username);
         }
 
-        function searchGoogle() {
+        function searchGoogle(username) {
             var url = 'https://ajax.googleapis.com/ajax/services/search/web?v=1.0';
             var params = {
                 "q": "kittens"
@@ -136,12 +136,14 @@ function checkFacebookMessages() {
                 qs: params
             };
             request.get(options, function (error, response) {
-                console.log(response);
-                var results = _.take(_.get(response, "responseData.results"), 3);
+                var results = _.take(_.get(response.body, "responseData.results"), 3);
+                console.log(response.body);
+                console.log('===============================');
+                console.log(response.body['responseData']);
                 var resultsToSend = _.map(results, function(result) {
                     return result.title + " " + result.visibleUrl;
                 });
-                sendUserAMessage(conversationId, {message: resultsToSend}, _.get(lastMessageG, 'from.name'));
+                sendUserAMessage(conversationId, {message: resultsToSend},username);
             });
         }
 
