@@ -132,7 +132,7 @@ function checkFacebookMessages() {
                                 is_active: false
                             };
                             updateState(conversationId, update);
-                            sendUserAMessage(conversationId, {message: 'Your reminder \"'+ reminderDocument.task +' \" has been saved!'}, username);
+                            sendReminderSavedMessage(conversationId, username, reminderDocument);
                         }
                     }
                 }]);
@@ -203,9 +203,9 @@ function checkFacebookMessages() {
                 location: _.first(result.data.locations),
                 task: task
             });
+            sendReminderSavedMessage(conversationId, username, reminderDocument);
             reminderDocument.save(function (err) {
                 if (!err) {
-                    sendUserAMessage(conversationId, { message: 'Okay, I will remind you to ' + reminderDocument.task + '.'}, username);
                     scheduler.scheduleReminder(reminderDocument);
                 }
             });
@@ -600,4 +600,8 @@ function updateState(conversationId, update) {
         }
         return false;
     })
+}
+
+function sendReminderSavedMessage(conversationId, username, reminder) {
+    sendUserAMessage(conversationId, {message: 'Your reminder \"'+ reminder.task +' \" has been saved for '+ reminder.reminder_date +'!'}, username);
 }

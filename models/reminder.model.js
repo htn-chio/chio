@@ -12,6 +12,10 @@ var reminderSchema = {
             'finished'
         ]
     },
+    created_date: {
+        type: Date,
+        default: Date.now
+    },
     reminder_date: Date,
     location: String,
     task: String
