@@ -103,6 +103,7 @@ function parseUberResponse(outcome){
         data: {
             start_location: _.map(outcome.entities.start, getValueFromEntity),
             end_location: _.map(outcome.entities.end, getValueFromEntity),
+            contacts: _.map(outcome.entities.contact, getValueFromEntity),
         }
     }
 }
