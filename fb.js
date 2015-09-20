@@ -4,6 +4,7 @@ var _ = require('lodash');
 var FB = require('fb');
 var wit = require('./wit');
 var eventbrite = require('./eventbrite');
+var moment = require('moment');
 var Reminder = require('./models/reminder.model.js');
 var State = require('./models/state.model.js');
 var scheduler = require('./schedule')
@@ -43,6 +44,10 @@ function checkFacebookMessages() {
 
                 if (lastSenderId !== CHIO_BOT_ID) {
                     wit.parseText(lastMessage.message, function (result) {
+                        var splitMessage = lastMessage.message.split(' ');
+                        if (splitMessage[0] === 'TEST') {
+                            return processResult(result, conversation, splitMessage[1]);
+                        }
                         processResult(result, conversation)
                     });
                 }
@@ -50,7 +55,7 @@ function checkFacebookMessages() {
         }
     }
 
-    function processResult(result, conversation) {
+    function processResult(result, conversation, testIntent) {
         var conversationId = conversation.id;
         var lastMessage = _.first(_.get(conversation, 'messages.data'));
         var username = _.get(lastMessage, 'from.name');
@@ -61,8 +66,13 @@ function checkFacebookMessages() {
             "Greeting": processGreeting,
             "Event": processEventSearch,
             "Insult": processInsult,
-            "Search": searchGoogle
-        };
+	    "Search": searchGoogle
+            "ViewMore": processViewMore
+        }
+
+        if (testIntent && FUNCTIONS_BY_INTENT[testIntent]) {
+            return FUNCTIONS_BY_INTENT[testIntent]();
+        }
 
         if (FUNCTIONS_BY_INTENT[result.api]) {
             return FUNCTIONS_BY_INTENT[result.api]();
@@ -76,18 +86,30 @@ function checkFacebookMessages() {
             var options = {
                 term: searchTerm,
                 location: location,
-                limit: 3,
+                limit: 20,
                 sort: 1 // 0 for best matched, 1 for distance, 2 for best rated
             };
             yelp.search(options, function (error, data) {
                 var businesses = data.businesses;
+                var businesses = _.take(businesses, 3);
                 var businessStrings = _.map(businesses, mapBusinessInfo);
                 var messageToSend = businessStrings.join('\n\n');
+                messageToSend += '\n' + 'Type "View More" to see more results!';
                 var messageObject = {
                     message: messageToSend,
                     shareable_attachment: 953061814739331
                 };
 
+                var newState = new State({
+                    conversation_id: conversationId,
+                    create_date: moment(),
+                    is_active: true,
+                    outcome: data.businesses,
+                    meta_data: {
+                        last_seen_index: 3
+                    }
+                });
+                saveState(conversationId, newState);
                 sendUserAMessage(conversationId, messageObject, username);
             });
         }
@@ -235,7 +257,35 @@ function checkFacebookMessages() {
             sendUserAMessage(conversationId, {message: '#Rude'}, username);
         }
 
-        function searchGoogle() {
+        function processViewMore() {
+            async.waterfall([
+                function (waterfallNext) {
+                    var currentState = getState(conversationId, waterfallNext);
+                },
+                function (currentState) {
+                    if (currentState) {
+                        var businesses = currentState.outcome;
+                        var lastIndex = currentState.meta_data.last_seen_index;
+                        var businesses = _.slice(businesses, lastIndex, lastIndex + 3);
+                        var businessStrings = _.map(businesses, mapBusinessInfo);
+                        var messageToSend = businessStrings.join('\n\n');
+                        messageToSend += '\n' + 'Type "View More" to see more results!';
+                        var messageObject = {
+                            message: messageToSend,
+                            shareable_attachment: 953061814739331
+                        };
+
+                        var update = {
+                            "meta_data.last_seen_index": lastIndex + 3
+                        };
+                        updateState(conversationId, update);
+                        sendUserAMessage(conversationId, messageObject, username);
+                    }
+                }
+            ]);
+        }
+
+	function searchGoogle() {
             var url = 'https://ajax.googleapis.com/ajax/services/search/web?v=1.0';
             var params = {
                 "q": _.first(result.data.search_queries)
@@ -312,14 +362,14 @@ function saveState(conversationId, newState) {
     });
 }
 
-function getState(conversationId) {
+function getState(conversationId, callback) {
     State.findOne({
         conversation_id: conversationId
     }, function (error, state) {
         if (state) {
-            return state;
+            return callback(null, state);
         }
-        return false;
+        return callback(null, false);
     })
 }
 
