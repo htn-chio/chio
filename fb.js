@@ -66,9 +66,9 @@ function checkFacebookMessages() {
             "Greeting": processGreeting,
             "Event": processEventSearch,
             "Insult": processInsult,
-	    "Search": searchGoogle
+            "Search": searchGoogle,
             "ViewMore": processViewMore
-        }
+        };
 
         if (testIntent && FUNCTIONS_BY_INTENT[testIntent]) {
             return FUNCTIONS_BY_INTENT[testIntent]();
@@ -285,7 +285,7 @@ function checkFacebookMessages() {
             ]);
         }
 
-	function searchGoogle() {
+        function searchGoogle() {
             var url = 'https://ajax.googleapis.com/ajax/services/search/web?v=1.0';
             var params = {
                 "q": _.first(result.data.search_queries)
