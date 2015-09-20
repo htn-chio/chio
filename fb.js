@@ -218,7 +218,7 @@ function checkFacebookMessages() {
         }
 
         function processGreeting() {
-            sendUserAMessage(conversationId, { message: 'Hello, ' + username } + '!', username);
+            sendUserAMessage(conversationId, { message: 'Hello, ' + username  + '!'}, username);
         }
 
         function processEventSearch() {
