@@ -42,7 +42,7 @@ function checkFacebookMessages() {
                 var lastSenderId = _.get(lastMessage, 'from.id');
 
                 if (lastSenderId !== CHIO_BOT_ID) {
-                    wit.parseText(lastMessage.message, function(result){
+                    wit.parseText(lastMessage.message, function (result) {
                         processResult(result, conversation)
                     });
                 }
@@ -79,7 +79,7 @@ function checkFacebookMessages() {
             var task = _.first(result.data.reminders);
 
             if (!task) {
-                return sendUserAMessage(conversationId, { message: 'I don\'t know what to remind you.' }, username);
+                return sendUserAMessage(conversationId, {message: 'I don\'t know what to remind you.'}, username);
             }
 
             var reminderDocument = new Reminder({
@@ -92,7 +92,7 @@ function checkFacebookMessages() {
             });
             reminderDocument.save(function (err) {
                 if (!err) {
-                    sendUserAMessage(conversationId, { message: 'Reminder saved!' }, username);
+                    sendUserAMessage(conversationId, {message: 'Reminder saved!'}, username);
                     scheduler.scheduleReminder(reminderDocument);
                 }
             });
@@ -109,21 +109,21 @@ function checkFacebookMessages() {
 
             // Send message back to User with Uber information
         } else if (result.api === 'Greeting') {
-            sendUserAMessage(conversationId, { message: 'Hello, ' + username } + '!', username);
+            sendUserAMessage(conversationId, {message: 'Hello, ' + username} + '!', username);
         } else if (result.api === 'Event') {
             eventbrite.search(result.data, function (err, data) {
                 if (err) console.error(err);
                 var eventStrings = _.map(data.events.slice(0, 3), mapEventData);
                 var messageToSend = eventStrings.join('\n\n');
-                sendUserAMessage(conversationId, { message: messageToSend }, username);
+                sendUserAMessage(conversationId, {message: messageToSend}, username);
             });
         } else if (result.api === 'Insult') {
-            sendUserAMessage(conversationId, { message: '#Rude' }, username);
+            sendUserAMessage(conversationId, {message: '#Rude'}, username);
         } else if (result.api === 'Search') {
             searchGoogle(username);
 
         } else {
-            sendUserAMessage(conversationId, { message: 'Sorry, I don\'t understand what you said.' }, username);
+            sendUserAMessage(conversationId, {message: 'Sorry, I don\'t understand what you said.'}, username);
         }
 
         function searchGoogle(username) {
@@ -136,14 +136,11 @@ function checkFacebookMessages() {
                 qs: params
             };
             request.get(options, function (error, response) {
-                var results = _.take(_.get(response.body, "responseData.results"), 3);
-                console.log(response.body);
-                console.log('===============================');
-                console.log(response.body['responseData']);
-                var resultsToSend = _.map(results, function(result) {
-                    return result.title + " " + result.visibleUrl;
+                var results = _.take(_.get(JSON.parse(response.body), "responseData.results"), 3);
+                var resultsToSend = _.map(results, function (result) {
+                    return result.title.replace(/<\/?[^>]+(>|$)/g, "") + " " + result.visibleUrl + '\n\n';
                 });
-                sendUserAMessage(conversationId, {message: resultsToSend},username);
+                sendUserAMessage(conversationId, { message: resultsToSend.join('') }, username);
             });
         }
 
@@ -286,21 +283,21 @@ function sendUserAMessage(conversationId, messageObject, username) {
 function saveState(conversationId, newState) {
     State.findOne({
         conversation_id: conversationId
-    }, function(error, state) {
-      if (state) {
-          state = _.assign(state, newState);
-      } else {
-          state = newState;
-      }
-      state.save();
-      return state;
+    }, function (error, state) {
+        if (state) {
+            state = _.assign(state, newState);
+        } else {
+            state = newState;
+        }
+        state.save();
+        return state;
     });
 }
 
 function getState(conversationId) {
     State.findOne({
         conversation_id: conversationId
-    }, function(error, state) {
+    }, function (error, state) {
         if (state) {
             return state;
         }
@@ -311,8 +308,8 @@ function getState(conversationId) {
 function updateState(conversationId, update) {
     State.findOneAndUpdate({
         conversation_id: conversationId
-    }, update, { new: true }, function(error, state) {
-        if(state){
+    }, update, {new: true}, function (error, state) {
+        if (state) {
             return state;
         }
         return false;
