@@ -138,11 +138,24 @@ function checkFacebookMessages() {
         }
 
         function processUber() {
+            var type;
+
             async.waterfall([
+                getCurrentState,
+                askForLocation,
                 findUber,
                 requestUber,
-                acceptUber
+                acceptUber,
+                getPriceEstimate,
             ], finalCallback);
+
+            function getCurrentState(waterfallNext) {
+                getState(conversationId, waterfallNext);
+            }
+
+            function askForLocation(currentState, waterfallNext) {
+                waterfallNext(null);
+            }
 
             function findUber(waterfallNext) {
                 var url = 'https://sandbox-api.uber.com/v1/products';
@@ -168,6 +181,8 @@ function checkFacebookMessages() {
                         message: 'Uber found!',
                         shareable_attachment: 953066084738904
                     };
+
+                    type = uber.display_name;
 
                     sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
                     return waterfallNext(null, uberDetails);
@@ -235,6 +250,34 @@ function checkFacebookMessages() {
                 })
             }
 
+            function getPriceEstimate(waterfallNext) {
+                var priceUrl = 'https://sandbox-api.uber.com/v1/estimates/price';
+                var params = {
+                    "server_token": "AhNNYnBNwt_BDiHL0hPNGUuEHXpHpO21gvNNVlJL",
+                    "start_longitude": "-80.5400",
+                    "start_latitude": "43.4689",
+                    "end_longitude": "-79.4000",
+                    "end_latitude": "43.7000"
+                };
+                var options = {
+                    url: priceUrl,
+                    qs: params
+                };
+
+                request.get(options, function (error, response) {
+                    var price = _.find(JSON.parse(response.body).prices, function(price) {
+                        return price.display_name === 'uberX';
+                    });
+                    var messageObject = {
+                        message: 'Price estimate for your ' + type + ': ' + price.estimate,
+                        shareable_attachment: 953066084738904
+                    };
+
+                    sendUserAMessage(conversationId, messageObject, _.get(lastMessage, 'from.name'));
+                    return waterfallNext(null);
+                });
+            }
+
             function finalCallback(error) {
                 console.log('done');
             }
@@ -260,7 +303,7 @@ function checkFacebookMessages() {
         function processViewMore() {
             async.waterfall([
                 function (waterfallNext) {
-                    var currentState = getState(conversationId, waterfallNext);
+                    getState(conversationId, waterfallNext);
                 },
                 function (currentState) {
                     if (currentState) {
