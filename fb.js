@@ -29,7 +29,7 @@ var fbController = {
 module.exports = fbController;
 
 function checkFacebookMessages() {
-    var chioBotConversationURL = '/952568054788707/conversations';
+    var chioBotConversationURL = '/722653077866736/conversations';
 
     FB.api(chioBotConversationURL, parseConversations);
 
@@ -39,7 +39,6 @@ function checkFacebookMessages() {
 
             _.forEach(conversations, function (conversation) {
                 var lastMessage = _.first(_.get(conversation, 'messages.data'));
-
                 var lastSenderId = _.get(lastMessage, 'from.id');
 
                 if (lastSenderId !== CHIO_BOT_ID) {
@@ -392,8 +391,12 @@ function sendUserAMessage(conversationId, messageObject, username) {
     messageObject.message += '\n\n from ' + config.user.name + '\'s server.';
     FB.api(conversationURL, 'POST', messageObject, callback);
 
-    function callback() {
-        console.log('message sent to ' + username);
+    function callback(error) {
+        if (error) {
+            console.error('ERROR: ' + error.error.message);
+        } else {
+            console.log('message sent to ' + username);
+        }
     }
 }
 
