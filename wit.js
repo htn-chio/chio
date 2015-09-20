@@ -35,13 +35,15 @@ function parseText(text, callback) {
 
     function parseWitResponse(res, waterfallNext) {
         var outcome = _.max(res.outcomes, 'confidence');
-        console.log(outcome.intent);
+
         if (outcome.confidence < 0.7){
             return waterfallNext('Not enough confidence');
         }
+
         if(!FUNC_BY_INTENT.hasOwnProperty(outcome.intent)){
             return waterfallNext('Intent does not exist: ' + outcome.intent);
         }
+
         return waterfallNext(FUNC_BY_INTENT[outcome.intent](outcome));
     }
 }

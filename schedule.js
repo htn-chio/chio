@@ -22,7 +22,8 @@ function init() {
 }
 
 function scheduleReminder(reminder) {
-    console.log(reminder.task + '/' + reminder.location + ' being scheduled');
+    console.log('SCHEDULING: ' + reminder.task + '/' + reminder.location);
+
     schedule.scheduleJob(reminder._id, reminder.reminder_date, function () {
         Reminder.findById(reminder._id, function (err, reminder) {
             console.log(reminder._id + " " + reminder.task + " reminder is being triggered");
