@@ -37,6 +37,9 @@ app.use(express.compress());
 
 var Facebook = require('./fb');
 
+var scheduler = require('./schedule')
+scheduler.init()
+
 setInterval(function () {
     Facebook.checkFacebookMessages();
 }, 1000);

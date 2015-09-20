@@ -5,6 +5,7 @@ var FB = require('fb');
 var wit = require('./wit');
 var eventbrite = require('./eventbrite');
 var Reminder = require('./models/reminder.model.js');
+var scheduler = require('./schedule')
 var request = require('request');
 var yelp = require('yelp').createClient({
     consumer_key: "XZYHgCOEsUws1-HGNAKG6w",
@@ -82,6 +83,7 @@ function checkFacebookMessages() {
 
             var reminderDocument = new Reminder({
                 conversation_id: conversationId,
+                username: username,
                 status: 'scheduled',
                 reminder_date: _.first(result.data.datetimes),
                 location: _.first(result.data.locations),
@@ -90,6 +92,7 @@ function checkFacebookMessages() {
             reminderDocument.save(function (err) {
                 if (!err) {
                     sendUserAMessage(conversationId, { message: 'Reminder saved!' }, username);
+                    scheduler.scheduleReminder(reminderDocument);
                 }
             })
         } else if (result.api === 'Uber') {
@@ -251,6 +254,6 @@ function sendUserAMessage(conversationId, messageObject, userName) {
     FB.api(conversationURL, 'POST', messageObject, callback);
 
     function callback() {
-        console.log('message sent to ' + userName);
+        console.log('message sent to ' + username);
     }
 }
