@@ -272,16 +272,23 @@ function checkFacebookMessages() {
                 qs: params
             };
             request.get(options, function (error, response) {
+                var message;
                 var uber = JSON.parse(response.body).products[0];
                 var uberDetails = {};
-                if (uber) {
+                if (!uber) {
+                    message = 'There are no cars available right now. Please try again later.';
+                    sendUserAMessage(conversationId, { message: message }, _.get(lastMessage, 'from.name'));
+                    var error = new Error('No cars available!');
+                    return waterfallNext(error, uberDetails);
+                } else {
                     uberDetails = {
                         productId: uber.product_id,
                         type: uber.display_name
                     };
+                    message = 'I found you an Uber!';
                 }
                 var messageObject = {
-                    message: 'I found you an Uber!'
+                    message: message
                 };
 
                 type = uber.display_name;
@@ -567,7 +574,9 @@ function sendUserAMessage(conversationId, messageObject, username) {
 }
 
 function deleteState(conversationId) {
-    State.remove({ conversation_id: conversationId });
+    State.remove({ conversation_id: conversationId }, function(err){
+        console.error(err);
+    });
 }
 
 function saveState(conversationId, newState) {
