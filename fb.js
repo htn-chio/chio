@@ -107,9 +107,10 @@ function checkFacebookMessages() {
                     outcome: data.businesses,
                     meta_data: {
                         last_seen_index: 3
-                    }
+                    },
+                    state_type: 'Yelp'
                 });
-                saveState(conversationId, newState);
+                saveState(conversationId, 'Yelp', newState);
                 sendUserAMessage(conversationId, messageObject, username);
             });
         }
@@ -303,13 +304,14 @@ function checkFacebookMessages() {
         function processViewMore() {
             async.waterfall([
                 function (waterfallNext) {
-                    getState(conversationId, waterfallNext);
+                    getState(conversationId, 'Yelp', waterfallNext);
                 },
                 function (currentState) {
-                    if (currentState) {
+                    if (currentState && currentState.state_type === 'Yelp') {
                         var businesses = currentState.outcome;
                         var lastIndex = currentState.meta_data.last_seen_index;
-                        var businesses = _.slice(businesses, lastIndex, lastIndex + 3);
+                        var quantity = (!!result.data.number) ? result.data.number : 3;
+                        var businesses = _.slice(businesses, lastIndex, lastIndex + quantity);
                         var businessStrings = _.map(businesses, mapBusinessInfo);
                         var messageToSend = businessStrings.join('\n\n');
                         messageToSend += '\n' + 'Type "View More" to see more results!';
@@ -397,7 +399,8 @@ function sendUserAMessage(conversationId, messageObject, username) {
 
 function saveState(conversationId, newState) {
     State.findOne({
-        conversation_id: conversationId
+        conversation_id: conversationId,
+        state_type: state_type
     }, function (error, state) {
         if (state) {
             state = _.assign(state, newState);
@@ -409,9 +412,10 @@ function saveState(conversationId, newState) {
     });
 }
 
-function getState(conversationId, callback) {
+function getState(conversationId, state_type, callback) {
     State.findOne({
-        conversation_id: conversationId
+        conversation_id: conversationId,
+        state_type: state_type
     }, function (error, state) {
         if (state) {
             return callback(null, state);
@@ -420,9 +424,10 @@ function getState(conversationId, callback) {
     })
 }
 
-function updateState(conversationId, update) {
+function updateState(conversationId, state_type, update) {
     State.findOneAndUpdate({
-        conversation_id: conversationId
+        conversation_id: conversationId,
+        state_type: state_type
     }, update, {new: true}, function (error, state) {
         if (state) {
             return state;

@@ -11,6 +11,10 @@ var stateSchema = {
         type: Boolean,
         default: true
     },
+    state_type: {
+        type: String,
+        enum: ['Yelp', 'Uber', 'Reminder']
+    },
     outcome: {}
 };
 
