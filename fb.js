@@ -401,7 +401,7 @@ function sendUserAMessage(conversationId, messageObject, username) {
     }
 }
 
-function saveState(conversationId, newState) {
+function saveState(conversationId, state_type, newState) {
     State.findOne({
         conversation_id: conversationId,
         state_type: state_type
