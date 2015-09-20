@@ -163,8 +163,8 @@ function checkFacebookMessages() {
         }
 
         function processUber() {
-            var startLocation = _.first(result.data.start_location);
-            var endLocation = _.first(result.data.end_location);
+            startLocation = _.first(result.data.start_location);
+            endLocation = _.first(result.data.end_location);
 
             if (_.isEmpty(startLocation) || _.isEmpty(endLocation)) {
                 createState();
@@ -337,7 +337,7 @@ function checkFacebookMessages() {
         }
 
         function finalCallback(error) {
-            updateState(conversationId, { "is_active": false });
+            deleteState(conversationId);
             console.log('done');
         }
 
@@ -363,7 +363,7 @@ function checkFacebookMessages() {
 
             function determineNextAction(currentState) {
                 if (currentState) {
-                    if (currentState.is_active) {
+                    if (currentState.is_active && currentState.meta_data) {
                         startLocation = currentState.meta_data.start_location;
                         endLocation = currentState.meta_data.end_location;
                     }
@@ -384,6 +384,11 @@ function checkFacebookMessages() {
                             getPriceEstimate
                         ], finalCallback);
                     } else {
+                        var metaData = {
+                            "start_location": startLocation,
+                            "end_location": endLocation
+                        };
+                        updateState(conversationId, { "meta_data": metaData });
                         promptLocation('endLocation');
                     }
                 }
@@ -506,6 +511,10 @@ function sendUserAMessage(conversationId, messageObject, username) {
             console.log('message sent to ' + username);
         }
     }
+}
+
+function deleteState(conversationId) {
+    State.remove({ conversation_id: conversationId });
 }
 
 function saveState(conversationId, newState) {

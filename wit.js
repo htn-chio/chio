@@ -84,7 +84,7 @@ function parseInsultResponse(outcome){
     return {
         api: 'Insult',
         data: {
-            contacts: _.map(outcome.entities.contact, getValueFromEntity),
+            contacts: _.map(outcome.entities.contact, getValueFromEntity)
         }
     }
 }
@@ -93,7 +93,7 @@ function parseLocationResponse(outcome) {
     return {
         api: 'Location',
         data: {
-            location: _.first(outcome.entities.location, getValueFromEntity),
+            location: _.first(outcome.entities.location, getValueFromEntity)
         }
     }
 }
